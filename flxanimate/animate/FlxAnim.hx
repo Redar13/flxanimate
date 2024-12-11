@@ -9,7 +9,7 @@ import flixel.math.FlxMatrix;
 #if FLX_SOUND_SYSTEM
 import flixel.sound.FlxSound;
 #end
-import flixel.util.FlxDestroyUtil.IFlxDestroyable;
+import flixel.util.FlxDestroyUtil;
 import flixel.util.FlxSignal.FlxTypedSignal;
 import flixel.util.FlxSignal;
 import flixel.util.FlxStringUtil;
@@ -94,18 +94,29 @@ class FlxAnim implements IFlxDestroyable
 	/**
 	 * A signal dispatched when the animation's over,
 	 * when the current frame is equal to the current symbol's length.
-	 * @param animName
-	 * @param symbolName
+	 *
+	 * @param   animName     The name of the current animation.
+	 * @param   symbolName   The name of the current symbol.
 	*/
-	public var onComplete:FlxTypedSignal<(String, String)->Void> = new FlxTypedSignal();
+	public var onComplete = new FlxTypedSignal<(animName:String, symbolName:String)->Void>();
 
 	/**
 	 * A signal dispatched when the animation advances one frame.
-	 * @param animName
-	 * @param symbolName
-	 * @param frame The current frame number.
+	 *
+	 * @param   animName      The name of the current animation.
+	 * @param   symbolName    The name of the current symbol.
+	 * @param   frameNumber   The current frame number.
 	 */
-	public var onFrame:FlxTypedSignal<(String, String, Int)->Void> = new FlxTypedSignal();
+	public var onFrame = new FlxTypedSignal<(animName:String, symbolName:String, frameNumber:Int)->Void>();
+
+	/**
+	 * A signal dispatched when current animation's loop is complete.
+	 * Works only with looped animations.
+	 *
+	 * @param   animName      The name of the current animation.
+	 * @param   symbolName    The name of the current symbol.
+	 */
+	public var onLoop = new FlxTypedSignal<(animName:String, symbolName:String)->Void>();
 
 	/**
 	 * The framerate of the current animation.
@@ -345,14 +356,20 @@ class FlxAnim implements IFlxDestroyable
 				if (reversed)
 				{
 					if (loopType == Loop && curFrame == loopPoint)
+					{
 						curFrame = length - 1;
+						onLoop.dispatch(curInstance.symbol.name, curSymbol.name);
+					}
 					else
 						curFrame--;
 				}
 				else
 				{
 					if (loopType == Loop && curFrame == length - 1)
+					{
 						curFrame = loopPoint;
+						onLoop.dispatch(curInstance.symbol.name, curSymbol.name);
+					}
 					else
 						curFrame++;
 				}
@@ -703,6 +720,10 @@ class FlxAnim implements IFlxDestroyable
 
 	public function destroy()
 	{
+		FlxDestroyUtil.destroy(onComplete);
+		FlxDestroyUtil.destroy(onFrame);
+		FlxDestroyUtil.destroy(onLoop);
+
 		isPlaying = false;
 		curFrame = 0;
 		framerate = 0;
