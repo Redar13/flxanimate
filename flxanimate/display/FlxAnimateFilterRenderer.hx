@@ -154,6 +154,8 @@ class FlxAnimateFilterRenderer
 			else
 				filters.push(maskFilter);
 		}
+		else if (filters == null)
+			return;
 		renderer.__setBlendMode(NORMAL);
 		renderer.__worldAlpha = 1;
 
@@ -164,58 +166,49 @@ class FlxAnimateFilterRenderer
 		var bitmap2:BitmapData = casheBmp;
 		var bitmap3:BitmapData = casheBmp2;
 
-		if (rect == null)
-		{
-			renderer.__setRenderTarget(outBmp);
-			if (startBmp != bitmap)
-				renderer.__renderFilterPass(startBmp, renderer.__defaultDisplayShader, true);
-		}
-		else
-		{
-			startBmp.__renderTransform.translate(-rect.x, -rect.y);
-			renderer.__setRenderTarget(outBmp);
-			if (startBmp != bitmap)
-				renderer.__renderFilterPass(startBmp, renderer.__defaultDisplayShader, true);
-			startBmp.__renderTransform.translate(rect.x, rect.y);
-		}
+		if (rect != null)
+			startBmp.__renderTransform.translate(Math.abs(rect.x), Math.abs(rect.y));
+		renderer.__setRenderTarget(bitmap);
+		if (startBmp != bitmap)
+			renderer.__renderFilterPass(startBmp, renderer.__defaultDisplayShader, true);
+		startBmp.__renderTransform.identity();
+
 		// startBmp.__renderTransform.identity();
 
-		if (filters != null)
+		for (filter in filters)
 		{
-			for (filter in filters)
+			if (filter.__preserveObject)
 			{
-				if (filter.__preserveObject)
-				{
-					renderer.__setRenderTarget(bitmap3);
-					renderer.__renderFilterPass(bitmap, renderer.__defaultDisplayShader, filter.__smooth);
-				}
-
-				for (i in 0...filter.__numShaderPasses)
-				{
-					renderer.__setBlendMode(filter.__shaderBlendMode);
-					renderer.__setRenderTarget(bitmap2);
-					renderer.__renderFilterPass(bitmap, filter.__initShader(renderer, i, (filter.__preserveObject) ? bitmap3 : null), filter.__smooth);
-
-					renderer.__setRenderTarget(bitmap);
-					renderer.__renderFilterPass(bitmap2, renderer.__defaultDisplayShader, filter.__smooth);
-				}
-
-				filter.__renderDirty = false;
+				renderer.__setRenderTarget(bitmap3);
+				renderer.__renderFilterPass(bitmap, renderer.__defaultDisplayShader, filter.__smooth);
 			}
 
-			if (mask != null)
-				filters.pop();
+			for (i in 0...filter.__numShaderPasses)
+			{
+				renderer.__setBlendMode(filter.__shaderBlendMode);
+				renderer.__setRenderTarget(bitmap2);
+				renderer.__renderFilterPass(bitmap, filter.__initShader(renderer, i, filter.__preserveObject ? bitmap3 : null), filter.__smooth);
 
-			var gl = renderer.__gl;
+				renderer.__setRenderTarget(bitmap);
+				renderer.__renderFilterPass(bitmap2, renderer.__defaultDisplayShader, filter.__smooth);
+			}
 
-			var renderBuffer = bitmap.getTexture(renderer.__context3D);
-			bitmap = checkImageData(bitmap);
-			@:privateAccess
-			gl.readPixels(0, 0, bitmap.width, bitmap.height, renderBuffer.__format, gl.UNSIGNED_BYTE, bitmap.image.data);
-			bitmap.image.version = 0;
-			@:privateAccess
-			bitmap.__textureVersion = -1;
+			filter.__renderDirty = false;
 		}
+
+		if (mask != null)
+			filters.pop();
+
+		var gl = renderer.__gl;
+
+		var renderBuffer = bitmap.getTexture(renderer.__context3D);
+		bitmap = checkImageData(bitmap);
+		@:privateAccess
+		gl.readPixels(0, 0, bitmap.width, bitmap.height, renderBuffer.__format, gl.UNSIGNED_BYTE, bitmap.image.data);
+		bitmap.image.version = 0;
+		@:privateAccess
+		bitmap.__textureVersion = -1;
+		renderer.__context3D.setRenderToBackBuffer();
 	}
 
 	public function applyBlend(blend:BlendMode, bitmap:BitmapData)
@@ -262,8 +255,10 @@ class FlxAnimateFilterRenderer
 
 		var bounds = gfx.__owner.getBounds(null);
 
-		var bmp = (target == null) ? new BitmapData(Math.ceil(bounds.width), Math.ceil(bounds.height), true, 0) : target;
+		if (target == null)
+			target = new BitmapData(Math.ceil(bounds.width), Math.ceil(bounds.height), true, 0);
 
+		renderer.__worldTransform.identity();
 		renderer.__worldTransform.translate(-bounds.x, -bounds.y);
 		if (point != null)
 		{
@@ -271,24 +266,21 @@ class FlxAnimateFilterRenderer
 		}
 
 		// GfxRenderer.render(gfx, cast renderer.__softwareRenderer);
-		// var bmp = gfx.__bitmap;
+		// var target = gfx.__bitmap;
 
 		var context = renderer.__context3D;
 
-		renderer.__setRenderTarget(bmp);
-		var renderBuffer = bmp.getTexture(context);
+		renderer.__setRenderTarget(target);
+		var renderBuffer = target.getTexture(context);
 		context.setRenderToTexture(renderBuffer);
 
 		Context3DGraphics.render(gfx, renderer);
 
-		renderer.__worldTransform.identity();
-
-
 		var gl = renderer.__gl;
 
-		bmp = checkImageData(bmp);
+		checkImageData(target);
 		@:privateAccess
-		gl.readPixels(0, 0, bmp.width, bmp.height, renderBuffer.__format, gl.UNSIGNED_BYTE, bmp.image.data);
+		gl.readPixels(0, 0, target.width, target.height, renderBuffer.__format, gl.UNSIGNED_BYTE, target.image.data);
 
 
 		if (cacheRTT != null)
@@ -300,6 +292,6 @@ class FlxAnimateFilterRenderer
 			renderer.__context3D.setRenderToBackBuffer();
 		}
 
-		return bmp;
+		return target;
 	}
 }

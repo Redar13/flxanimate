@@ -208,7 +208,8 @@ class FlxAnim implements IFlxDestroyable
 	{
 		pause();
 
-		Force = (Force || finished);
+		if (finished)
+			Force = true;
 
 		var curThing:AnimStuff = null;
 		if (Name != "")

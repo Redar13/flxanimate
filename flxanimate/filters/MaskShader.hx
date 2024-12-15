@@ -40,5 +40,6 @@ void main()
 	{
 		super();
 		relativePos.value = [0, 0];
+		mainPalette.wrap = CLAMP;
 	}
 }

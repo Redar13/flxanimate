@@ -147,10 +147,7 @@ class FlxLayer extends FlxObject implements IFilterable
 				_prevFrame = _currFrame;
 				if (_clipper != null)
 				{
-					if (_currFrame.getList().length <= 0)
-						_clipper._renderable = false;
-					else
-						_clipper._renderable = true;
+					_clipper._renderable = _currFrame.getList().length > 0;
 					_clipper._currFrame._renderDirty = true;
 				}
 				// _currFrame.updateRender(elapsed, curFrame, dictionary, swfRender);

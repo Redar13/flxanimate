@@ -295,21 +295,22 @@ class SymbolParameters implements IFilterable
 			value = NORMAL;
 
 		if (type == Graphic) return blendMode = NORMAL;
-
+/*
 		if (blendMode != value)
 		{
 			blendMode = value;
 			if (blendMode != NORMAL && _filterFrame == null)
 				_renderDirty = true;
 		}
-		return value;
+*/
+		return blendMode = value;
 	}
 
 	function get_cacheAsBitmap()
 	{
 		if (type == Graphic) return false;
 
-		if (filters != null && filters.length > 0 || blendMode != NORMAL) return true;
+		if (filters != null && filters.length > 0 /*|| blendMode != NORMAL*/) return true;
 
 		return _cacheAsBitmap;
 	}
