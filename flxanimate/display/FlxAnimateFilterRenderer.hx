@@ -175,8 +175,44 @@ class FlxAnimateFilterRenderer
 		if (mask != null)
 			filters.pop();
 
-		// writeCurToBitmap(bitmap);
+		if (openfl.Lib.current.stage.context3D == null)
+			writeCurToBitmap(outBmp);
+
 		hardwareRenderer.__context3D.setRenderToBackBuffer();
+	}
+
+	function checkBitmapImage(bitmap:BitmapData) {
+		if (bitmap == null || bitmap.image != null && bitmap.image.data != null) return;
+		#if sys
+		var buffer = new ImageBuffer(new UInt8Array(bitmap.width * bitmap.height *4), bitmap.width, bitmap.height);
+		buffer.format = BGRA32;
+		buffer.premultiplied = true;
+
+		bitmap.image = new Image(buffer, 0, 0, bitmap.width, bitmap.height);
+
+		// #elseif (js && html5)
+		// var buffer = new ImageBuffer (null, width, height);
+		// var canvas:CanvasElement = cast Browser.document.createElement ("canvas");
+		// buffer.__srcCanvas = canvas;
+		// buffer.__srcContext = canvas.getContext ("2d");
+		//
+		// image = new Image (buffer, 0, 0, width, height);
+		// image.type = CANVAS;
+		//
+		// if (fillColor != 0) {
+		//
+		// image.fillRect (image.rect, fillColor);
+		//
+		// }
+		#else
+		bitmap.image = new Image(null, 0, 0, bitmap.width, bitmap.height, bitmap.fillColor);
+		#end
+
+		bitmap.image.transparent = bitmap.transparent;
+		bitmap.image.version = 0;
+
+		bitmap.__isValid = true;
+		bitmap.readable = true;
 	}
 
 	public function writeCurToBitmap(bitmap:BitmapData, ?renderBuffer:TextureBase, ?format:Null<Int>)
@@ -185,39 +221,7 @@ class FlxAnimateFilterRenderer
 		var gl = hardwareRenderer.__gl;
 		// if (renderBuffer == null) return;
 		renderBuffer ??= bitmap.getTexture(hardwareRenderer.__context3D);
-		if (bitmap.image == null || bitmap.image.data == null)
-		{
-			#if sys
-			var buffer = new ImageBuffer(new UInt8Array(bitmap.width * bitmap.height * 4), bitmap.width, bitmap.height);
-			buffer.format = BGRA32;
-			buffer.premultiplied = true;
-
-			bitmap.image = new Image(buffer, 0, 0, bitmap.width, bitmap.height);
-
-			// #elseif (js && html5)
-			// var buffer = new ImageBuffer (null, width, height);
-			// var canvas:CanvasElement = cast Browser.document.createElement ("canvas");
-			// buffer.__srcCanvas = canvas;
-			// buffer.__srcContext = canvas.getContext ("2d");
-			//
-			// image = new Image (buffer, 0, 0, width, height);
-			// image.type = CANVAS;
-			//
-			// if (fillColor != 0) {
-			//
-			// image.fillRect (image.rect, fillColor);
-			//
-			// }
-			#else
-			bitmap.image = new Image(null, 0, 0, bitmap.width, bitmap.height, bitmap.fillColor);
-			#end
-
-			bitmap.image.transparent = bitmap.transparent;
-			bitmap.image.version = 0;
-
-			bitmap.__isValid = true;
-			bitmap.readable = true;
-		}
+		checkBitmapImage(bitmap);
 		@:privateAccess
 		gl.readPixels(0, 0, bitmap.width, bitmap.height, renderBuffer.__format, format ?? /* gl.FASTEST */ gl.UNSIGNED_BYTE, bitmap.image.data);
 		@:privateAccess
@@ -270,22 +274,31 @@ class FlxAnimateFilterRenderer
 			hardwareRenderer.__worldTransform.translate(point.x, point.y);
 		}
 
-		/*
-		if (openfl.Lib.current.stage.context3D == null)
-		{
-			// target.fillRect(target.rect, 0);
+		target.__update(false, true);
 
-			softRenderer.__pixelRatio = hardwareRenderer.__pixelRatio;
-			// It's working, I guess?
+		/*
+		// TODO: Support for CPU based games (Cairo/Canvas only renderers)
+		if (openfl.Lib.current.stage.context3D == null || true)
+		{
+			checkBitmapImage(target);
+			target.fillRect(target.rect, 0);
 			#if (js && html5)
-			ImageCanvasUtil.convertToCanvas(bmp.image);
+			ImageCanvasUtil.convertToCanvas(target.image);
 			@:privateAccess
-			softRenderer.setTransform(hardwareRenderer.__worldTransform, target.image.buffer.__srcContext);
+			var softRenderer = new CanvasRenderer(target.image.buffer.__srcContext);
 			#else
-			softRenderer.applyMatrix(hardwareRenderer.__worldTransform, new lime.graphics.cairo.Cairo(target.__surface));
+			var softRenderer = new CairoRenderer(new Cairo(target.getSurface()));
 			#end
-			softRenderer.__clear();
-			GfxRenderer.render(gfx, cast softRenderer);
+			softRenderer.__allowSmoothing = true;
+			softRenderer.__worldTransform = new Matrix();
+			softRenderer.__worldAlpha = 1;
+			softRenderer.__worldColorTransform = new ColorTransform();
+
+			#if (js && html5)
+			target.__drawCanvas(target, softRenderer);
+			#else
+			target.__drawCairo(target, softRenderer);
+			#end
 
 			return target;
 		}
@@ -302,14 +315,14 @@ class FlxAnimateFilterRenderer
 		var renderBuffer = target.getTexture(context);
 		context.setRenderToTexture(renderBuffer);
 
-		if (pushToImageData)
-			target.fillRect(target.rect, 0);
+		// if (pushToImageData)
+		// 	target.fillRect(target.rect, 0);
 		// else
 		context.clear(0, 0, 0, 0, 0, 0, Context3DClearMask.COLOR);
 		// hardwareRenderer.__clear();
 
 		Context3DGraphics.render(gfx, hardwareRenderer);
-		if (pushToImageData)
+		if (pushToImageData || openfl.Lib.current.stage.context3D == null)
 			writeCurToBitmap(target, renderBuffer);
 
 		hardwareRenderer.__setRenderTarget(null);
