@@ -34,6 +34,28 @@ class Utils
 	}
 
 	@:access(openfl.display.BitmapData)
+	public static function createBitmap(width:Int, height:Int, ?onlyTexture:Bool = true):BitmapData
+	{
+		var bmp = new BitmapData(width, height, true, 0x00000000);
+		if (onlyTexture)
+		{
+			bmp.lock();
+			// if (bmp.__texture == null)
+			{
+				bmp.image.premultiplied = true;
+				bmp.getTexture(flixel.FlxG.stage.context3D);
+			}
+			bmp.__surface ??= lime.graphics.cairo.CairoImageSurface.fromImage(bmp.image);
+
+			bmp.readable = true;
+			bmp.image.data = null;
+			bmp.unlock();
+		}
+		return bmp;
+	}
+
+
+	@:access(openfl.display.BitmapData)
 	public static function dispose(bmp:BitmapData):BitmapData
 	{
 		if (bmp != null)

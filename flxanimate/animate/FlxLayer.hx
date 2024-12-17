@@ -91,8 +91,10 @@ class FlxLayer extends FlxObject implements IFilterable
 		if (_filterFrame != null)
 		{
 			FlxG.bitmap.remove(_filterFrame.parent);
+			Utils.dispose(_filterFrame.parent.bitmap);
+			_filterFrame = FlxDestroyUtil.destroy(_filterFrame);
 		}
-		_filterFrame = FlxDestroyUtil.destroy(_filterFrame);
+
 		_filterCamera = FlxDestroyUtil.put(cast _filterCamera);
 		_filterCamera = FlxDestroyUtil.destroy(_filterCamera);
 		maskCamera = FlxDestroyUtil.put(cast maskCamera);
@@ -361,6 +363,7 @@ class FlxLayer extends FlxObject implements IFilterable
 			var hei = Math.ceil((_filterFrame == null || rect.height > _filterFrame.parent.height) ? rect.height : _filterFrame.parent.height);
 			if (_filterFrame != null)
 			{
+				Utils.dispose(_filterFrame.parent.bitmap);
 				_filterFrame.parent.destroy();
 				// FlxG.bitmap.remove(_bmpGraphic1);
 				// FlxG.bitmap.remove(_bmpGraphic2);
@@ -370,12 +373,12 @@ class FlxLayer extends FlxObject implements IFilterable
 				@:privateAccess
 				_filterFrame = new FlxFrame(null);
 			}
-			_filterFrame.parent = FlxG.bitmap.add(new BitmapData(wid, hei, 0), true);
+			_filterFrame.parent = FlxG.bitmap.add(Utils.createBitmap(wid, hei), true);
 			Utils.dispose(_bmp1);
-			_bmp1 = new BitmapData(wid, hei, 0);
+			_bmp1 = Utils.createBitmap(wid, hei);
 			// _bmpGraphic1 = FlxGraphic.fromBitmapData(_bmp1, true);
 			Utils.dispose(_bmp2);
-			_bmp2 = new BitmapData(wid, hei, 0);
+			_bmp2 = Utils.createBitmap(wid, hei);
 			// _bmpGraphic2 = FlxGraphic.fromBitmapData(_bmp2, true);
 			_filterFrame.frame = new FlxRect(0, 0, wid, hei);
 			// _filterFrame.offset.set(rect.x, rect.y);

@@ -146,16 +146,19 @@ class SymbolParameters implements IFilterable
 		transformationPoint = FlxDestroyUtil.put(transformationPoint);
 
 		if (_filterFrame != null)
+		{
 			FlxG.bitmap.remove(_filterFrame.parent);
+			Utils.dispose(_filterFrame.parent.bitmap);
+			_filterFrame = FlxDestroyUtil.destroy(_filterFrame);
+		}
 
-		_filterFrame = FlxDestroyUtil.destroy(_filterFrame);
 		_filterCamera = FlxDestroyUtil.put(cast _filterCamera);
 		_filterCamera = FlxDestroyUtil.destroy(_filterCamera);
 		_filterMatrix = null;
 		// FlxG.bitmap.remove(FlxG.bitmap.get(FlxG.bitmap.findKeyForBitmap(_bmp1)));
-		_bmp1 = FlxDestroyUtil.dispose(_bmp1);
+		_bmp1 = Utils.dispose(_bmp1);
 		// FlxG.bitmap.remove(FlxG.bitmap.get(FlxG.bitmap.findKeyForBitmap(_bmp2)));
-		_bmp2 = FlxDestroyUtil.dispose(_bmp2);
+		_bmp2 = Utils.dispose(_bmp2);
 	}
 
 	function set_type(type:SymbolT)
@@ -278,11 +281,12 @@ class SymbolParameters implements IFilterable
 			else if (_filterFrame != null)
 			{
 				FlxG.bitmap.remove(_filterFrame.parent);
+				Utils.dispose(_filterFrame.parent.bitmap);
 				_filterFrame = FlxDestroyUtil.destroy(_filterFrame);
 				// FlxG.bitmap.remove(FlxG.bitmap.get(FlxG.bitmap.findKeyForBitmap(_bmp1)));
-				_bmp1 = FlxDestroyUtil.dispose(_bmp1);
+				_bmp1 = Utils.dispose(_bmp1);
 				// FlxG.bitmap.remove(FlxG.bitmap.get(FlxG.bitmap.findKeyForBitmap(_bmp2)));
-				_bmp2 = FlxDestroyUtil.dispose(_bmp2);
+				_bmp2 = Utils.dispose(_bmp2);
 			}
 		}
 
@@ -323,6 +327,7 @@ class SymbolParameters implements IFilterable
 			final hei = Math.ceil((_filterFrame == null || rect.height > _filterFrame.parent.height) ? rect.height : _filterFrame.parent.height);
 			if (_filterFrame != null)
 			{
+				Utils.dispose(_filterFrame.parent.bitmap);
 				_filterFrame.parent.destroy();
 				// FlxG.bitmap.remove(FlxG.bitmap.get(FlxG.bitmap.findKeyForBitmap(_bmp1)));
 				// if (_needSecondBmp)
@@ -334,14 +339,14 @@ class SymbolParameters implements IFilterable
 				_filterFrame = new FlxFrame(null);
 			}
 
-			_filterFrame.parent = FlxG.bitmap.add(new BitmapData(wid, hei, 0));
+			_filterFrame.parent = FlxG.bitmap.add(Utils.createBitmap(wid, hei));
 			Utils.dispose(_bmp1);
-			_bmp1 = new BitmapData(wid, hei, 0);
+			_bmp1 = Utils.createBitmap(wid, hei);
 			// FlxGraphic.fromBitmapData(_bmp1);
 			_bmp2 = Utils.dispose(_bmp2);
 			if (_needSecondBmp)
 			{
-				_bmp2 = new BitmapData(wid, hei, 0);
+				_bmp2 = Utils.createBitmap(wid, hei);
 				// FlxGraphic.fromBitmapData(_bmp2);
 			}
 

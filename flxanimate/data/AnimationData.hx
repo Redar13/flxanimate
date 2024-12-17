@@ -575,6 +575,10 @@ abstract SymbolInstance({}) from {}
 	 */
 	public var M3D(get, never):OneOfTwo<Array<Float>, Matrix3D>;
 	/**
+	 * The Matrix of the Symbol, Be aware from Neo! He can be anywhere!!! :fearful:
+	 */
+	public var MX(get, never):Array<Float>;
+	/**
 	 * The Color Effect of the symbol, it says color but it affects alpha too lol.
 	 */
 	public var C(get, set):ColorEffects;
@@ -616,6 +620,11 @@ abstract SymbolInstance({}) from {}
 	inline function get_TRP()
 	{
 		return MacroAnimationData.getFieldBool(this, ["TRP", "transformationPoint"]);
+	}
+
+	inline function get_MX()
+	{
+		return MacroAnimationData.getFieldBool(this, ["MX", "Matrix"]);
 	}
 
 	inline function get_M3D()
@@ -1010,13 +1019,31 @@ abstract AtlasSymbolInstance(Bitmap) from {}
 	 * The matrix of the sprite itself. Can be either an array or a typedef.
 	 */
 	public var M3D(get, never):OneOfTwo<Array<Float>, Matrix3D>;
+	/**
+	 * The Matrix of the Symbol, Be aware from Neo! He can be anywhere!!! :fearful:
+	 */
+	public var MX(get, never):Array<Float>;
 
 	inline function get_M3D()
 	{
 		return MacroAnimationData.getFieldBool(this, ["M3D", "Matrix3D"]);
 	}
+
+	inline function get_MX()
+	{
+		return MacroAnimationData.getFieldBool(this, ["MX", "Matrix"]);
+	}
 }
 
+typedef Matrix =
+{
+	var a:Float;
+	var b:Float;
+	var c:Float;
+	var d:Float;
+	var tx:Float;
+	var ty:Float;
+}
 typedef Matrix3D =
 {
 	var m00:Float;

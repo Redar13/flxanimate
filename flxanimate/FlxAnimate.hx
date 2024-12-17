@@ -293,8 +293,7 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 			}
 			*/
 
-			var json:AnimAtlas = haxe.Json.parse(animation);
-			anim._loadAtlas(json);
+			anim._loadAtlas(haxe.Json.parse(animation));
 		}
 		if (anim != null)
 			origin = anim.curInstance.symbol.transformationPoint;

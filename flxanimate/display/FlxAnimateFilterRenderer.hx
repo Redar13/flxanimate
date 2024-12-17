@@ -13,15 +13,12 @@ import openfl.display.Graphics;
 import openfl.display.OpenGLRenderer;
 import openfl.display3D.Context3D;
 import openfl.display3D.Context3DClearMask;
+import openfl.display3D.textures.TextureBase;
 import openfl.filters.BitmapFilter;
 import openfl.filters.ShaderFilter;
 import openfl.geom.ColorTransform;
 import openfl.geom.Rectangle;
 import openfl.geom.Matrix;
-import openfl.utils._internal.UInt8Array;
-
-import lime.graphics.Image;
-import lime.graphics.cairo.Cairo;
 
 #if (js && html5)
 import openfl.display.CanvasRenderer;
@@ -31,6 +28,13 @@ import lime._internal.graphics.ImageCanvasUtil;
 import openfl.display.CairoRenderer;
 import openfl.display._internal.CairoGraphics as GfxRenderer;
 #end
+
+import lime.graphics.cairo.Cairo;
+
+import openfl.utils._internal.UInt8Array;
+import lime.graphics.Image;
+import lime.graphics.ImageBuffer;
+import lime.graphics.ImageChannel;
 
 
 @:access(openfl.display.OpenGLRenderer)
@@ -48,7 +52,8 @@ import openfl.display._internal.CairoGraphics as GfxRenderer;
 @:access(openfl.display3D.Context3D)
 class FlxAnimateFilterRenderer
 {
-	var renderer:OpenGLRenderer;
+	// var softRenderer:#if (js && html5) CanvasRenderer #else CairoRenderer #end;
+	var hardwareRenderer:OpenGLRenderer;
 	var context:Context3D;
 
 	static var maskShader:MaskShader = new MaskShader();
@@ -57,47 +62,16 @@ class FlxAnimateFilterRenderer
 	public function new()
 	{
 		// context = new openfl.display3D.Context3D(null);
-		renderer = new OpenGLRenderer(FlxG.game.stage.context3D);
-		renderer.__worldTransform = new Matrix();
-		renderer.__worldColorTransform = new ColorTransform();
-	}
+		hardwareRenderer = new OpenGLRenderer(FlxG.game.stage.context3D);
+		hardwareRenderer.__worldTransform = new Matrix();
+		hardwareRenderer.__worldColorTransform = new ColorTransform();
 
-	static function checkImageData(bmp:BitmapData):BitmapData
-	{
-		if (bmp.image == null && bmp.width > 0 && bmp.height > 0 || !bmp.__isValid)
-		{
-			#if lime
-			#if sys
-			var buffer = new lime.graphics.ImageBuffer(new UInt8Array(bmp.width * bmp.height * 4), bmp.width, bmp.height);
-			buffer.format = BGRA32;
-			buffer.premultiplied = true;
-
-			bmp.image = new Image(buffer, 0, 0, bmp.width, bmp.height);
-			// #elseif (js && html5)
-			// var buffer = new ImageBuffer (null, width, height);
-			// var canvas:CanvasElement = cast Browser.document.createElement ("canvas");
-			// buffer.__srcCanvas = canvas;
-			// buffer.__srcContext = canvas.getContext ("2d");
-			//
-			// image = new Image (buffer, 0, 0, width, height);
-			// image.type = CANVAS;
-			//
-			// if (fillColor != 0) {
-			//
-			// image.fillRect (image.rect, fillColor);
-			//
-			// }
-			#else
-			bmp.image = new Image(null, 0, 0, bmp.width, bmp.height, 0);
-			#end
-
-			bmp.image.transparent = true;
-			#end
-
-			bmp.__isValid = true;
-			bmp.readable = true;
-		}
-		return bmp;
+		// #if (js && html5)
+		// @:privateAccess
+		// softRenderer = new CanvasRenderer(null);
+		// #else
+		// softRenderer = new CairoRenderer(null);
+		// #end
 	}
 
 	@:noCompletion function setRenderer(renderer:DisplayObjectRenderer, rect:Rectangle)
@@ -156,11 +130,14 @@ class FlxAnimateFilterRenderer
 		}
 		else if (filters == null)
 			return;
-		renderer.__setBlendMode(NORMAL);
-		renderer.__worldAlpha = 1;
 
-		renderer.__worldTransform.identity();
-		renderer.__worldColorTransform.__identity();
+		var context = hardwareRenderer.__context3D;
+
+		hardwareRenderer.__setBlendMode(NORMAL);
+		hardwareRenderer.__worldAlpha = 1;
+
+		hardwareRenderer.__worldTransform.identity();
+		hardwareRenderer.__worldColorTransform.__identity();
 
 		var bitmap:BitmapData = outBmp;
 		var bitmap2:BitmapData = casheBmp;
@@ -168,29 +145,28 @@ class FlxAnimateFilterRenderer
 
 		if (rect != null)
 			startBmp.__renderTransform.translate(Math.abs(rect.x), Math.abs(rect.y));
-		renderer.__setRenderTarget(bitmap);
+		hardwareRenderer.__setRenderTarget(bitmap);
+		context.clear(0, 0, 0, 0, 0, 0, Context3DClearMask.COLOR);
 		if (startBmp != bitmap)
-			renderer.__renderFilterPass(startBmp, renderer.__defaultDisplayShader, true);
+			hardwareRenderer.__renderFilterPass(startBmp, hardwareRenderer.__defaultDisplayShader, true);
 		startBmp.__renderTransform.identity();
-
-		// startBmp.__renderTransform.identity();
 
 		for (filter in filters)
 		{
 			if (filter.__preserveObject)
 			{
-				renderer.__setRenderTarget(bitmap3);
-				renderer.__renderFilterPass(bitmap, renderer.__defaultDisplayShader, filter.__smooth);
+				hardwareRenderer.__setRenderTarget(bitmap3);
+				hardwareRenderer.__renderFilterPass(bitmap, hardwareRenderer.__defaultDisplayShader, filter.__smooth);
 			}
 
 			for (i in 0...filter.__numShaderPasses)
 			{
-				renderer.__setBlendMode(filter.__shaderBlendMode);
-				renderer.__setRenderTarget(bitmap2);
-				renderer.__renderFilterPass(bitmap, filter.__initShader(renderer, i, filter.__preserveObject ? bitmap3 : null), filter.__smooth);
+				hardwareRenderer.__setBlendMode(filter.__shaderBlendMode);
+				hardwareRenderer.__setRenderTarget(bitmap2);
+				hardwareRenderer.__renderFilterPass(bitmap, filter.__initShader(hardwareRenderer, i, filter.__preserveObject ? bitmap3 : null), filter.__smooth);
 
-				renderer.__setRenderTarget(bitmap);
-				renderer.__renderFilterPass(bitmap2, renderer.__defaultDisplayShader, filter.__smooth);
+				hardwareRenderer.__setRenderTarget(bitmap);
+				hardwareRenderer.__renderFilterPass(bitmap2, hardwareRenderer.__defaultDisplayShader, filter.__smooth);
 			}
 
 			filter.__renderDirty = false;
@@ -199,16 +175,53 @@ class FlxAnimateFilterRenderer
 		if (mask != null)
 			filters.pop();
 
-		var gl = renderer.__gl;
+		// writeCurToBitmap(bitmap);
+		hardwareRenderer.__context3D.setRenderToBackBuffer();
+	}
 
-		var renderBuffer = bitmap.getTexture(renderer.__context3D);
-		bitmap = checkImageData(bitmap);
+	public function writeCurToBitmap(bitmap:BitmapData, ?renderBuffer:TextureBase, ?format:Null<Int>)
+	{
+		// if (bitmap == null) return;
+		var gl = hardwareRenderer.__gl;
+		// if (renderBuffer == null) return;
+		renderBuffer ??= bitmap.getTexture(hardwareRenderer.__context3D);
+		if (bitmap.image == null || bitmap.image.data == null)
+		{
+			#if sys
+			var buffer = new ImageBuffer(new UInt8Array(bitmap.width * bitmap.height * 4), bitmap.width, bitmap.height);
+			buffer.format = BGRA32;
+			buffer.premultiplied = true;
+
+			bitmap.image = new Image(buffer, 0, 0, bitmap.width, bitmap.height);
+
+			// #elseif (js && html5)
+			// var buffer = new ImageBuffer (null, width, height);
+			// var canvas:CanvasElement = cast Browser.document.createElement ("canvas");
+			// buffer.__srcCanvas = canvas;
+			// buffer.__srcContext = canvas.getContext ("2d");
+			//
+			// image = new Image (buffer, 0, 0, width, height);
+			// image.type = CANVAS;
+			//
+			// if (fillColor != 0) {
+			//
+			// image.fillRect (image.rect, fillColor);
+			//
+			// }
+			#else
+			bitmap.image = new Image(null, 0, 0, bitmap.width, bitmap.height, bitmap.fillColor);
+			#end
+
+			bitmap.image.transparent = bitmap.transparent;
+			bitmap.image.version = 0;
+
+			bitmap.__isValid = true;
+			bitmap.readable = true;
+		}
 		@:privateAccess
-		gl.readPixels(0, 0, bitmap.width, bitmap.height, renderBuffer.__format, gl.UNSIGNED_BYTE, bitmap.image.data);
-		bitmap.image.version = 0;
+		gl.readPixels(0, 0, bitmap.width, bitmap.height, renderBuffer.__format, format ?? /* gl.FASTEST */ gl.UNSIGNED_BYTE, bitmap.image.data);
 		@:privateAccess
 		bitmap.__textureVersion = -1;
-		renderer.__context3D.setRenderToBackBuffer();
 	}
 
 	public function applyBlend(blend:BlendMode, bitmap:BitmapData)
@@ -244,54 +257,70 @@ class FlxAnimateFilterRenderer
 		return bitmap;
 	}
 
-	public function graphicstoBitmapData(gfx:Graphics, ?target:BitmapData, ?point:FlxPoint) // TODO!: Support for CPU based games (Cairo/Canvas only renderers)
+	public function graphicstoBitmapData(gfx:Graphics, target:BitmapData, ?pushToImageData:Bool, ?point:FlxPoint)
 	{
-		if (gfx.__bounds == null) return null;
-
-		var cacheRTT = renderer.__context3D.__state.renderToTexture;
-		var cacheRTTDepthStencil = renderer.__context3D.__state.renderToTextureDepthStencil;
-		var cacheRTTAntiAlias = renderer.__context3D.__state.renderToTextureAntiAlias;
-		var cacheRTTSurfaceSelector = renderer.__context3D.__state.renderToTextureSurfaceSelector;
+		if (target == null) return target;
 
 		var bounds = gfx.__owner.getBounds(null);
 
-		if (target == null)
-			target = new BitmapData(Math.ceil(bounds.width), Math.ceil(bounds.height), true, 0);
-
-		renderer.__worldTransform.identity();
-		renderer.__worldTransform.translate(-bounds.x, -bounds.y);
+		hardwareRenderer.__worldTransform.identity();
+		hardwareRenderer.__worldTransform.translate(-bounds.x, -bounds.y);
 		if (point != null)
 		{
-			renderer.__worldTransform.translate(point.x, point.y);
+			hardwareRenderer.__worldTransform.translate(point.x, point.y);
 		}
 
-		// GfxRenderer.render(gfx, cast renderer.__softwareRenderer);
-		// var target = gfx.__bitmap;
+		/*
+		if (openfl.Lib.current.stage.context3D == null)
+		{
+			// target.fillRect(target.rect, 0);
 
-		var context = renderer.__context3D;
+			softRenderer.__pixelRatio = hardwareRenderer.__pixelRatio;
+			// It's working, I guess?
+			#if (js && html5)
+			ImageCanvasUtil.convertToCanvas(bmp.image);
+			@:privateAccess
+			softRenderer.setTransform(hardwareRenderer.__worldTransform, target.image.buffer.__srcContext);
+			#else
+			softRenderer.applyMatrix(hardwareRenderer.__worldTransform, new lime.graphics.cairo.Cairo(target.__surface));
+			#end
+			softRenderer.__clear();
+			GfxRenderer.render(gfx, cast softRenderer);
 
-		renderer.__setRenderTarget(target);
+			return target;
+		}
+		*/
+
+		var context = hardwareRenderer.__context3D;
+		var cacheRTT = context.__state.renderToTexture;
+		var cacheRTTDepthStencil = context.__state.renderToTextureDepthStencil;
+		var cacheRTTAntiAlias = context.__state.renderToTextureAntiAlias;
+		var cacheRTTSurfaceSelector = context.__state.renderToTextureSurfaceSelector;
+		// context.setRenderToBackBuffer();
+
+		hardwareRenderer.__setRenderTarget(target);
 		var renderBuffer = target.getTexture(context);
 		context.setRenderToTexture(renderBuffer);
 
-		Context3DGraphics.render(gfx, renderer);
+		if (pushToImageData)
+			target.fillRect(target.rect, 0);
+		// else
+		context.clear(0, 0, 0, 0, 0, 0, Context3DClearMask.COLOR);
+		// hardwareRenderer.__clear();
 
-		var gl = renderer.__gl;
+		Context3DGraphics.render(gfx, hardwareRenderer);
+		if (pushToImageData)
+			writeCurToBitmap(target, renderBuffer);
 
-		checkImageData(target);
-		@:privateAccess
-		gl.readPixels(0, 0, target.width, target.height, renderBuffer.__format, gl.UNSIGNED_BYTE, target.image.data);
-
-
+		hardwareRenderer.__setRenderTarget(null);
 		if (cacheRTT != null)
 		{
-			renderer.__context3D.setRenderToTexture(cacheRTT, cacheRTTDepthStencil, cacheRTTAntiAlias, cacheRTTSurfaceSelector);
+			context.setRenderToTexture(cacheRTT, cacheRTTDepthStencil, cacheRTTAntiAlias, cacheRTTSurfaceSelector);
 		}
 		else
 		{
-			renderer.__context3D.setRenderToBackBuffer();
+			context.setRenderToBackBuffer();
 		}
-
 		return target;
 	}
 }

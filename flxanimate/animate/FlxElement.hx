@@ -198,13 +198,14 @@ class FlxElement extends FlxObject implements IFlxDestroyable
 			params.filters = AnimationData.fromFilterJson(SI.F);
 		}
 
-		final m3d = symbol ? SI.M3D : ASI.M3D;
+		var m3d = symbol ? SI.M3D : ASI.M3D;
 		var m:Array<Float>;
 
 		if (m3d == null)
 		{
+			var mx:Array<Float> = symbol ? SI.MX : ASI.MX;
 			// Initialize with identity matrix if m3d is null
-    		m = [
+    		m = mx?.copy() ?? [
 				1, 0, 0,
 				1, 0, 0
 			];
@@ -218,6 +219,7 @@ class FlxElement extends FlxObject implements IFlxDestroyable
 			m = [];
     		// Assuming m3d is an object with properties m00, m01, m02, etc.
 			static final rowColNames = ["m00","m01","m10","m11","m30","m31"];
+			m.resize(rowColNames.length);
 			var fieldName:String;
 			for (i in 0...rowColNames.length) {
 				fieldName = rowColNames[i];
