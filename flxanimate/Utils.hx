@@ -39,17 +39,15 @@ class Utils
 		var bmp = new BitmapData(width, height, true, 0x00000000);
 		if (onlyTexture)
 		{
-			bmp.lock();
 			// if (bmp.__texture == null)
 			{
 				bmp.image.premultiplied = true;
 				bmp.getTexture(flixel.FlxG.stage.context3D);
 			}
-			bmp.__surface ??= lime.graphics.cairo.CairoImageSurface.fromImage(bmp.image);
+			bmp.__surface = lime.graphics.cairo.CairoImageSurface.fromImage(bmp.image);
 
-			bmp.readable = true;
+			// bmp.readable = true;
 			bmp.image.data = null;
-			bmp.unlock();
 		}
 		return bmp;
 	}
