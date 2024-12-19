@@ -46,7 +46,7 @@ class Utils
 			}
 			bmp.__surface = lime.graphics.cairo.CairoImageSurface.fromImage(bmp.image);
 
-			// bmp.readable = true;
+			bmp.readable = true;
 			bmp.image.data = null;
 		}
 		return bmp;
