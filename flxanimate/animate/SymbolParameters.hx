@@ -358,13 +358,14 @@ class SymbolParameters implements IFilterable
 		}
 		else
 		{
-			_bmp1.fillRect(_bmp1.rect, 0);
-			_filterFrame.parent.bitmap.fillRect(_filterFrame.parent.bitmap.rect, 0);
+			// _bmp1.fillRect(_bmp1.rect, 0);
+			// _filterFrame.parent.bitmap.fillRect(_filterFrame.parent.bitmap.rect, 0);
 			if (_bmp2 != null)
 			{
-				if (_needSecondBmp)
-					_bmp2.fillRect(_bmp2.rect, 0);
-				else
+				// if (_needSecondBmp)
+				// 	_bmp2.fillRect(_bmp2.rect, 0);
+				// else
+				if (!_needSecondBmp)
 				{
 					// FlxG.bitmap.remove(FlxG.bitmap.get(FlxG.bitmap.findKeyForBitmap(_bmp2)));
 					_bmp2 = Utils.dispose(_bmp2);

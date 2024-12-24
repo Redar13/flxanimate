@@ -89,8 +89,7 @@ class FlxPooledCamera extends FlxCamera implements IFlxPooled
 		return pool.get();
 	}
 	public override function destroy() {
-		clearDrawStack();
-		canvas.graphics.clear();
+		Utils.clearCameraDraws(this);
 	}
 	public function superDestroy()
 	{
@@ -105,8 +104,7 @@ class FlxPooledCamera extends FlxCamera implements IFlxPooled
 @:access(openfl.geom.Rectangle)
 class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 {
-	@:isVar
-	public var useAtlas(get, never):Bool = true;
+	public var useAtlas(get, never):Bool;
 	public var toggleAtlas:Bool = true;
 
 	public var anim(default, null):FlxAnim;
@@ -611,8 +609,7 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 		{
 			if (instance.symbol._renderDirty || instance.symbol._filterFrame == null)
 			{
-				if (instance.symbol._filterCamera == null)
-					instance.symbol._filterCamera = FlxPooledCamera.get();
+				instance.symbol._filterCamera ??= FlxPooledCamera.get();
 
 				instance.symbol._filterMatrix.identity();
 				// instance.symbol._filterMatrix.copyFrom(instance.matrix);
@@ -695,8 +692,7 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 					}
 					else
 					{
-						if (layer._filterCamera == null)
-							layer._filterCamera = FlxPooledCamera.get();
+						layer._filterCamera ??= FlxPooledCamera.get();
 						if (isMasker && layer._filterFrame != null && frame.getList().length == 0)
 							layer.updateBitmaps(layer._bmp1.rect);
 					}
@@ -710,8 +706,7 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 					}
 					else
 					{
-						if (layer._clipper.maskCamera == null)
-							layer._clipper.maskCamera = FlxPooledCamera.get();
+						layer._clipper.maskCamera ??= FlxPooledCamera.get();
 						if (!frame._renderDirty)
 							continue;
 					}
@@ -874,9 +869,11 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 			Utils.clearCameraDraws(mask);
 			return;
 		}
-		var lMask = FlxAnimate.renderer.graphicstoBitmapData(mask.canvas.graphics, instance._bmp1, new FlxPoint(mBounds.x - bounds.x, mBounds.y - bounds.y));
-		var mrBmp = FlxAnimate.renderer.graphicstoBitmapData(masker.canvas.graphics, instance._bmp2);
 
+		var lMask = FlxAnimate.renderer.graphicstoBitmapData(mask.canvas.graphics, instance._bmp1,
+				new FlxPoint(mBounds.x - bounds.x, mBounds.y - bounds.y)
+			);
+		var mrBmp = FlxAnimate.renderer.graphicstoBitmapData(masker.canvas.graphics, instance._bmp2);
 		// instance._filterFrame.parent.bitmap.copyPixels(instance._bmp1, instance._bmp1.rect, instance._bmp1.rect.topLeft, instance._bmp2, instance._bmp2.rect.topLeft, true);
 		FlxAnimate.renderer.applyFilter(lMask, instance._filterFrame.parent.bitmap, lMask, null, null, mrBmp);
 
@@ -961,8 +958,7 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 		if (limb == null || limb.type == EMPTY || limb.parent.isDestroyed)
 			return;
 
-		if (cameras == null)
-			cameras = this.cameras;
+		cameras ??= this.cameras;
 
 		for (camera in cameras)
 		{
@@ -996,8 +992,7 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 		if (/*colorTransform != null && (colorTransform.alphaMultiplier == 0 || colorTransform.alphaOffset == -255) ||*/ limb == null || limb.type == EMPTY)
 			return;
 
-		if (cameras == null)
-			cameras = this.cameras;
+		cameras ??= this.cameras;
 
 		for (i => camera in cameras)
 		{
@@ -1100,8 +1095,7 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 
 	function limbOnScreen(limb:FlxFrame, m:FlxMatrix, ?writeSize:Bool = true, ?Camera:FlxCamera)
 	{
-		if (Camera == null)
-			Camera = FlxG.camera;
+		Camera ??= FlxG.camera;
 
 		rect.setTo(0, 0, limb.frame.width, limb.frame.height);
 
@@ -1158,17 +1152,10 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 
 	function set_showPivot(value:Bool)
 	{
-		if (value != showPivot)
+		if (value != showPivot && (showPivot = value))
 		{
-			showPivot = value;
-
-			if (showPivot)
-			{
-				if (_pivot == null)
-					_pivot = FlxGraphic.fromBitmapData(Assets.getBitmapData("flxanimate/images/pivot.png"), "__pivot").imageFrame.frame;
-				if (_indicator == null)
-					_indicator = FlxGraphic.fromBitmapData(Assets.getBitmapData("flxanimate/images/indicator.png"), "__indicator").imageFrame.frame;
-			}
+			_pivot ??= FlxGraphic.fromBitmapData(Assets.getBitmapData("flxanimate/images/pivot.png"), "__pivot").imageFrame.frame;
+			_indicator ??= FlxGraphic.fromBitmapData(Assets.getBitmapData("flxanimate/images/indicator.png"), "__indicator").imageFrame.frame;
 		}
 
 		return value;

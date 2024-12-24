@@ -388,9 +388,9 @@ class FlxLayer extends FlxObject implements IFilterable
 		}
 		else
 		{
-			_bmp1.fillRect(_bmp1.rect, 0);
-			_filterFrame.parent.bitmap.fillRect(_filterFrame.parent.bitmap.rect, 0);
-			_bmp2.fillRect(_bmp2.rect, 0);
+			// _bmp1.fillRect(_bmp1.rect, 0);
+			// _filterFrame.parent.bitmap.fillRect(_filterFrame.parent.bitmap.rect, 0);
+			// _bmp2.fillRect(_bmp2.rect, 0);
 		}
 
 	}
