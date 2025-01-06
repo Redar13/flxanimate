@@ -443,10 +443,18 @@ abstract MetaData({}) from {}
 	 * The framerate.
 	 */
 	public var FRT(get, never):Float;
+	/**
+	 * the current version of the exporter (Used in BetterTA)
+	 */
+	public var V(get, never):String;
 
 	inline function get_FRT()
 	{
 		return MacroAnimationData.getFieldBool(this, ["FRT", "framerate"]);
+	}
+	inline function get_V()
+	{
+		return MacroAnimationData.getFieldBool(this, ["V", "version"]);
 	}
 }
 /**
@@ -479,7 +487,7 @@ abstract Frame({}) from {}
 	/**
 	 * Filter stuff, this is the reason why you can't add custom shaders, srry
 	 */
-	public var F(get, never):Filters;
+	public var F(get, never):OneOfTwo<Array<Dynamic>, Filters>;
 
 	inline function get_N():String
 	{
@@ -555,6 +563,8 @@ abstract SymbolInstance({}) from {}
 	 */
 	public var bitmap(get, never):Bitmap;
 
+	public var B(get, never):String;
+
 	/**
 	 * this sets on which frame it's the symbol, Graphic only
 	 */
@@ -575,7 +585,7 @@ abstract SymbolInstance({}) from {}
 	 */
 	public var M3D(get, never):OneOfTwo<Array<Float>, Matrix3D>;
 	/**
-	 * The Matrix of the Symbol, Be aware from Neo! He can be anywhere!!! :fearful:
+	 * a 2D version of the matrix. (used only in BetterTA)
 	 */
 	public var MX(get, never):Array<Float>;
 	/**
@@ -586,7 +596,7 @@ abstract SymbolInstance({}) from {}
 	/**
 	 * Filter stuff, this is the reason why you can't add custom shaders, srry
 	 */
-	public var F(get, never):Filters;
+	public var F(get, never):OneOfTwo<Array<Dynamic>, Filters>;
 
 	inline function get_SN()
 	{
@@ -607,6 +617,12 @@ abstract SymbolInstance({}) from {}
 	{
 		return MacroAnimationData.getFieldBool(this, ["BM", "bitmap"]);
 	}
+
+	inline function get_B()
+	{
+		return MacroAnimationData.getFieldBool(this, ["B", "blend"]);
+	}
+
 	inline function get_FF()
 	{
 		return MacroAnimationData.getFieldBool(this, ["FF", "firstFrame"]) ?? 0;
@@ -622,14 +638,14 @@ abstract SymbolInstance({}) from {}
 		return MacroAnimationData.getFieldBool(this, ["TRP", "transformationPoint"]);
 	}
 
-	inline function get_MX()
-	{
-		return MacroAnimationData.getFieldBool(this, ["MX", "Matrix"]);
-	}
-
 	inline function get_M3D()
 	{
 		return MacroAnimationData.getFieldBool(this, ["M3D", "Matrix3D"]);
+	}
+
+	inline function get_MX()
+	{
+		return MacroAnimationData.getFieldBool(this, ["MX", "Matrix"]);
 	}
 
 	inline function get_C()
@@ -1019,8 +1035,9 @@ abstract AtlasSymbolInstance(Bitmap) from {}
 	 * The matrix of the sprite itself. Can be either an array or a typedef.
 	 */
 	public var M3D(get, never):OneOfTwo<Array<Float>, Matrix3D>;
+
 	/**
-	 * The Matrix of the Symbol, Be aware from Neo! He can be anywhere!!! :fearful:
+	 * a 2D version of the matrix. (used only in BetterTA)
 	 */
 	public var MX(get, never):Array<Float>;
 

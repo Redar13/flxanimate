@@ -80,6 +80,8 @@ class FlxAnim implements IFlxDestroyable
 	 */
 	public var symbolDictionary:Map<String, FlxSymbol>;
 
+	public var library:FlxSymbolDictionary = null;
+
 	/**
 		Checks whether MovieClips should move or not.
 	**/
@@ -181,22 +183,102 @@ class FlxAnim implements IFlxDestroyable
 	@:allow(flxanimate.FlxAnimate)
 	function _loadAtlas(animationFile:AnimAtlas)
 	{
-		symbolDictionary = [];
+		symbolDictionary = new Map<String, FlxSymbol>();
+		library = new FlxSymbolDictionary();
+		library._parent = this;
 		stageInstance = null;
 
 		if (animationFile == null) return;
-		setSymbols(animationFile);
 
-		stageInstance = (animationFile.AN.STI != null) ? FlxElement.fromJSON(cast animationFile.AN.STI) : new FlxElement(new SymbolParameters(animationFile.AN.SN));
+		var bta = animationFile.MD.V != null;
 
-		curInstance = stageInstance;
+		if (bta)
+			library.fromJSONEx(animationFile)
+		else
+			library.fromJSON(animationFile);
+		library.frames = _parent.frames;
+		loadFromLibrary(library);
+
+		curInstance = stageInstance = (animationFile.AN.STI != null) ? (bta ? FlxElement.fromJSONEx : FlxElement.fromJSON)(cast animationFile.AN.STI) : new FlxElement(new SymbolParameters(animationFile.AN.SN));
 
 		curFrame = stageInstance.symbol.firstFrame;
 
 		_parent.origin.copyFrom(stageInstance.symbol.transformationPoint);
 		metadata = new FlxMetaData(animationFile.AN.N, animationFile.MD.FRT);
 		framerate = metadata.frameRate;
+		if (bta)
+			metadata.version = animationFile.MD.V;
 	}
+
+	@:allow(flxanimate.FlxAnimate)
+	function _loadExAtlas(path:String)
+	{
+		symbolDictionary = new Map<String, FlxSymbol>();
+		library = new FlxSymbolDictionary();
+		library._parent = this;
+		stageInstance = null;
+
+		var animationFile:AnimAtlas = haxe.Json.parse(Utils.getText(path + "/Animation.json"));
+
+		var md:MetaData = haxe.Json.parse(Utils.getText(path + "/metadata.json"));
+
+		var files:Array<String> = [];
+		var poIndex = path.substring(path.indexOf(":") + 1).length + 9;
+
+		library.fromJSONEx(animationFile);
+
+		function addFiles(folder:String)
+		{
+			for (i in Utils.getFolderContent(folder, null, true))
+			{
+				if (Utils.extension(i) == "json")
+				{
+					files.push(i);
+				}
+				else if (Utils.extension(i.substr(i.lastIndexOf("/") + 1)) == null)
+				{
+					addFiles(i);
+				}
+			}
+		}
+
+		addFiles(path + "/LIBRARY");
+
+		// trace(files);
+
+		for (symbol in files)
+		{
+			var json = haxe.Json.parse(Utils.getText(symbol));
+			library.addSymbol(new FlxSymbol(
+				Utils.withoutExtension(symbol.substring(poIndex)),
+				FlxTimeline.fromJSONEx(json)
+			));
+		}
+		library.frames = _parent.frames;
+		loadFromLibrary(library);
+
+
+		final AN = animationFile.AN;
+		metadata = new FlxMetaData(AN.N, md.FRT);
+		metadata.version = md.V;
+		framerate = metadata.frameRate;
+
+		curInstance = stageInstance = (AN.STI != null) ? (FlxElement.fromJSONEx(cast AN.STI)) : new FlxElement(new SymbolParameters(AN.SN));
+
+
+		curFrame = stageInstance.symbol.firstFrame;
+
+		_parent.origin.copyFrom(stageInstance.symbol.transformationPoint);
+
+	}
+
+	function loadFromLibrary(lib:FlxSymbolDictionary)
+	{
+		library = lib;
+		symbolDictionary = lib.getList();
+		_parent.frames = lib.frames;
+	}
+
 	/**
 	 * Plays an animation.
 	 * @param Name The name of an animation or an `FlxSymbol`
@@ -330,15 +412,31 @@ class FlxAnim implements IFlxDestroyable
 		isPlaying = true;
 	}
 
-	function setSymbols(Anim:AnimAtlas)
+	function setSymbols(anim:AnimAtlas)
 	{
-		symbolDictionary.set(Anim.AN.SN, new FlxSymbol(Utils.withoutDirectory(Anim.AN.SN), FlxTimeline.fromJSON(Anim.AN.TL)));
+		var AN = anim.AN;
+		symbolDictionary.set(AN.SN, new FlxSymbol(Utils.withoutDirectory(AN.SN), FlxTimeline.fromJSON(AN.TL)));
 
-		if (Anim.SD != null)
+		var SD = anim.SD;
+		if (anim.SD != null)
 		{
-			for (symbol in Anim.SD.S)
+			for (symbol in anim.SD.S)
 			{
 				symbolDictionary.set(symbol.SN, new FlxSymbol(Utils.withoutDirectory(symbol.SN), FlxTimeline.fromJSON(symbol.TL)));
+			}
+		}
+	}
+	function setSymbolsEx(anim:AnimAtlas)
+	{
+		var AN = anim.AN;
+		symbolDictionary.set(AN.SN, new FlxSymbol(Utils.withoutDirectory(AN.SN), FlxTimeline.fromJSONEx(AN.TL)));
+
+		var SD = anim.SD;
+		if (SD != null)
+		{
+			for (symbol in SD.S)
+			{
+				symbolDictionary.set(symbol.SN, new FlxSymbol(Utils.withoutDirectory(symbol.SN), FlxTimeline.fromJSONEx(symbol.TL)));
 			}
 		}
 	}
@@ -535,7 +633,7 @@ class FlxAnim implements IFlxDestroyable
 			FlxG.log.error('$SymbolName does not exist as a symbol! maybe you misspelled it?');
 			return;
 		}
-		var params = new FlxElement(new SymbolParameters(Looped ? Loop : PlayOnce), new FlxMatrix(1,0,0,1,X,Y));
+		var params = new FlxElement(new SymbolParameters(Looped ? Loop : PlayOnce), new FlxMatrix(1, 0, 0, 1, X, Y));
 		var timeline = new FlxTimeline();
 		timeline.add("Layer 1");
 
@@ -586,15 +684,15 @@ class FlxAnim implements IFlxDestroyable
 	}
 
 	public inline function get_length()
-		return curSymbol.length;
+		return curSymbol?.length ?? 0;
 
 	public inline function getFrameLabel(name:String, ?layer:EitherType<Int, String>):FlxKeyFrame
 		return curSymbol.getFrameLabel(name, layer);
 
 	public function getLabel(Label:String, ?layer:EitherType<Int, String>, ?instance:FlxSymbol)
 	{
-		instance = instance == null ? symbolDictionary.get(stageInstance.symbol.name) : instance;
-		return instance == null ? null : instance.getFrameLabel(Label, layer);
+		instance ??= symbolDictionary.get(stageInstance.symbol.name);
+		return instance?.getFrameLabel(Label, layer);
 	}
 
 	public function toString()
@@ -676,10 +774,7 @@ class FlxAnim implements IFlxDestroyable
 	{
 		if (frame == null) frame = curFrame;
 
-		var symbol:FlxSymbol = null;
-
-		var layers = (layer == null) ? curSymbol.timeline.getList() : [curSymbol.timeline.get(layer)];
-		for (layer in layers)
+		for (layer in (layer == null ? curSymbol.timeline.getList() : [curSymbol.timeline.get(layer)]))
 		{
 			if (layer == null) continue;
 			var elements = layer.get(frame);
@@ -701,8 +796,7 @@ class FlxAnim implements IFlxDestroyable
 
 	public function getSymbolNameByLayerMark(layerMark:String)
 	{
-		var mainSymbol = symbolDictionary.get(stageInstance.symbol.name);
-		var label = mainSymbol == null ? null : mainSymbol.getFrameLabel(layerMark);
+		var label = symbolDictionary.get(stageInstance.symbol.name)?.getFrameLabel(layerMark);
 		if (label == null) // search from main symbol
 			return null;
 		var elements = label.getList();
@@ -744,6 +838,7 @@ class FlxAnim implements IFlxDestroyable
 			symbol.destroy();
 		}
 		symbolDictionary = null;
+		library = null;
 	}
 }
 /**
@@ -762,6 +857,13 @@ class FlxMetaData implements IFlxDestroyable
 
 	public var skipBlends:Bool;
 
+	/**
+	 * The version the Texture Atlas has been exported.
+	 *
+	 * (used in BTA, if it's been exported with the default one, it will set to `"Generic Adobe Animate TA"`)
+	 */
+	public var version:String;
+
 	public function new(name:String, frameRate:Float)
 	{
 		this.name = name;
@@ -769,6 +871,7 @@ class FlxMetaData implements IFlxDestroyable
 		showHiddenLayers = false;
 		skipFilters = false;
 		skipBlends = false;
+		version = "Generic Adobe Animate TA";
 	}
 	public function toString()
 	{
@@ -777,7 +880,8 @@ class FlxMetaData implements IFlxDestroyable
 			LabelValuePair.weak("frameRate", frameRate),
 			LabelValuePair.weak("showHiddenLayers", showHiddenLayers),
 			LabelValuePair.weak("skipFilters", skipFilters),
-			LabelValuePair.weak("skipBlends", skipBlends)
+			LabelValuePair.weak("skipBlends", skipBlends),
+			LabelValuePair.weak("version", version)
 		]);
 	}
 	public function destroy()

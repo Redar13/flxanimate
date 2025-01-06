@@ -412,4 +412,23 @@ class FlxLayer extends FlxObject implements IFilterable
 
 		return l;
 	}
+
+	public static function fromJSONEx(layer:Layers)
+	{
+		if (layer == null) return null;
+
+		var l = new FlxLayer(layer.LN);
+		final clpb = layer.Clpb;
+		l.type = (layer.LT != null) ? Clipper : (clpb != null) ? Clipped(clpb) : Normal;
+		final FR = layer.FR;
+		if (FR != null)
+		{
+			for (frame in FR)
+			{
+				l.add(FlxKeyFrame.fromJSONEx(frame));
+			}
+		}
+
+		return l;
+	}
 }

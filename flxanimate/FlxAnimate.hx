@@ -189,7 +189,6 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 		if (FlxAnimate.renderer == null)
 			FlxAnimate.renderer = new FlxAnimateFilterRenderer();
 		super(X, Y);
-		atlasIsValid = false;
 		if (SimpleGraphic != null)
 		{
 			if (Std.isOfType(SimpleGraphic, String))
@@ -211,17 +210,28 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 	 */
 	public function loadAtlas(Path:String)
 	{
+		var oldValid = atlasIsValid;
+		atlasIsValid = false;
 		if (!Utils.exists('$Path/Animation.json') && Utils.extension(Path) != "zip")
 		{
 			// kill();
 			FlxG.log.error('Animation file not found in specified path: "$Path", have you written the correct path?');
 			return;
 		}
-		// if (!atlasIsValid) revive();
+		// if (!oldValid) revive();
 		anim = FlxDestroyUtil.destroy(anim);
 		anim = new FlxAnim(this);
 		atlasIsValid = true;
-		loadSeparateAtlas(atlasSetting(Path), FlxAnimateFrames.fromTextureAtlas(Path));
+		if (Utils.exists('$Path/metadata.json'))
+		{
+			// BetterTA https://github.com/Dot-Stuff/BetterTextureAtlas
+			loadSeparateAtlas(null, FlxAnimateFrames.fromTextureAtlas(Path));
+			anim._loadExAtlas(Path);
+		}
+		else
+		{
+			loadSeparateAtlas(atlasSetting(Path), FlxAnimateFrames.fromTextureAtlas(Path));
+		}
 	}
 	/**
 	 * Function in handy to load atlases that share same animation/frames but dont necessarily mean it comes together.
@@ -292,9 +302,10 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 			*/
 
 			anim._loadAtlas(haxe.Json.parse(animation));
+
+			if (anim != null && anim.curInstance != null)
+				origin = anim.curInstance.symbol.transformationPoint;
 		}
-		if (anim != null)
-			origin = anim.curInstance.symbol.transformationPoint;
 	}
 
 	// TODO: PRECASHE FILTERS FUNC

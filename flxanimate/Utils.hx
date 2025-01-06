@@ -8,6 +8,8 @@ import sys.io.File;
 import openfl.Assets;
 #end
 
+using StringTools;
+
 class Utils
 {
 	@:access(flixel.FlxCamera)
@@ -64,6 +66,96 @@ class Utils
 
 	public inline static function withoutDirectory(path:String):String
 		return path.substring(path.lastIndexOf("/") + 1);
+
+	public dynamic static function getFolderContent(folder:String, ?folders:Null<Bool>, ?addPath:Bool):Array<String>
+	{
+		if (!folder.endsWith("/"))
+			folder += "/";
+		final colon = folder.indexOf(":");
+		var l = "";
+		var files:Array<String>;
+
+		#if ANIMATE_SYS_PATHS
+		if (colon == -1)
+		{
+			files = [
+				for (e in FileSystem.readDirectory(folder)) if (folders == null || FileSystem.isDirectory('$folder$e') == folders) e
+			];
+		}
+		else
+		{
+			l = folder.substring(0, colon);
+			var folder = folder.substring(colon);
+			files = [
+				for (e in FileSystem.readDirectory(folder)) if (folders == null || FileSystem.isDirectory('$folder$e') == folders) e
+			];
+			l += ":";
+		}
+		#else
+		if (colon == -1)
+		{
+			files = Assets.list();
+		}
+		else
+		{
+			l = folder.substring(0, colon);
+			files = Assets.getLibrary(l).list(null);
+			l += ":";
+		}
+		files = filterFileListByPath(files, folder, folders);
+		#end
+
+		if (addPath)
+		{
+			l += folder;
+		}
+		if (l.length > 0)
+		{
+			for (i in 0...files.length)
+			{
+				files[i] = l + files[i];
+			}
+		}
+
+		return files;
+	}
+
+	public static function filterFileListByPath(iterList:Iterable<String>, targetFolder:String, ?getFolders:Null<Bool>):Array<String> {
+		if (!targetFolder.endsWith("/"))
+			targetFolder = targetFolder + "/";
+
+		var arrList = targetFolder.length == 1 ? [
+			for (i in iterList) i
+		] : [
+			for (i in iterList)
+				if (i.startsWith(targetFolder)
+				&& (getFolders != null && (i.indexOf("/", targetFolder.length) != -1) == getFolders
+				|| getFolders == null))
+					i.substr(targetFolder.length)
+		];
+
+		if (getFolders != false && arrList.length > 0) {
+			var i:Int = arrList.length;
+			var i2:Int;
+			while (i > 0) {
+				i--;
+				i2 = arrList[i].indexOf("/");
+				if(i2 != -1)
+					arrList[i] = arrList[i].substr(0, i2);
+			}
+
+			// remove duplicates
+			i = arrList.length;
+			while (i > 0) {
+				i--;
+				while (i != arrList.indexOf(arrList[i])) {
+					arrList.splice(i, 1);
+					i--;
+				}
+			}
+		}
+		return arrList;
+	}
 
 	public inline static function getText(path:String):String
 		return #if ANIMATE_SYS_PATHS File.getContent(path)      #else Assets.getText(path) #end;

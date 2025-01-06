@@ -33,7 +33,11 @@ class FlxSymbol implements IFlxDestroyable
 	/**
 	 * The name of the symbol.
 	 */
-	public var name(default, null):String;
+	public var name:String;
+	/**
+	 * The location of the symbol.
+	 */
+	public var location:String;
 	@:noCompletion
 	@:deprecated("")
 	public var labels(default, null):Map<String, FlxLabel>;
@@ -58,17 +62,17 @@ class FlxSymbol implements IFlxDestroyable
 
 	var _tick:Float;
 
-	@:allow(flxanimate.animate.FlxAnim)
+	@:allow(flxanimate.animate)
 	function new(name:String, timeline:FlxTimeline)
 	{
 		curFrame = 0;
+		this.name = name;
 		this.timeline = timeline;
 		timeline._parent = this;
 
-		this.name = name;
-
 		activeCount = 0;
 	}
+
 	/**
 	 * Hides a layer from the timeline.
 	 * @param layer The name of the layer.
@@ -77,6 +81,7 @@ class FlxSymbol implements IFlxDestroyable
 	{
 		timeline.hide(layer);
 	}
+
 	/**
 	 * Shows a layer from the timeline.
 	 * @param layer The name of the layer.
@@ -85,6 +90,7 @@ class FlxSymbol implements IFlxDestroyable
 	{
 		timeline.show(layer);
 	}
+
 	/**
 	 * Adds a callback to a specific frame label.
 	 * @param label
@@ -107,6 +113,7 @@ class FlxSymbol implements IFlxDestroyable
 		label.callbacks.push(callback);
 		return true;
 	}
+
 	public function getCallbackFrom(label:String, callback:EitherType<Function, Int>, ?layer:EitherType<Int, String>)
 	{
 		var label = getFrameLabel(name, layer);
@@ -117,6 +124,7 @@ class FlxSymbol implements IFlxDestroyable
 		var c:Function = label.callbacks[(callback is Int) ? callback : label.callbacks.indexOf(callback)];
 		return c;
 	}
+
 	/**
 	 * Removes a callback from a certain label. can be extracted from a certain layer.
 	 * @param label The label in question.
@@ -138,6 +146,7 @@ class FlxSymbol implements IFlxDestroyable
 		label.callbacks.remove(callback);
 		return true;
 	}
+
 	public function removeAllCallbacksFrom(label:String, ?layer:EitherType<Int, String> = null)
 	{
 		var label = getFrameLabel(label, layer);
@@ -148,12 +157,14 @@ class FlxSymbol implements IFlxDestroyable
 		label.removeCallbacks();
 		return true;
 	}
+
 	public function destroy()
 	{
 		name = "";
 
 		timeline.destroy();
 	}
+
 	public function getNextToFrameLabel(label:String, ?layer:EitherType<Int, String> = null)
 	@:privateAccess {
 		if (layer == null) layer = 0;
@@ -387,6 +398,17 @@ class FlxSymbol implements IFlxDestroyable
 		}
 		if (onCallback != null)
 			onCallback();
+	}
+
+	public function getPathKey()
+	{
+		if (name == null || location == null) return null;
+		var keyPath = name;
+		if (location.length > 0)
+		{
+			keyPath = location + "/" + keyPath;
+		}
+		return keyPath;
 	}
 
 	inline function get_length()

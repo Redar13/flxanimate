@@ -195,7 +195,14 @@ class FlxTimeline implements IFlxDestroyable
 	public static function fromJSON(timeline:Timeline)
 	{
 		var timelineL = timeline?.L;
-		if (timeline == null || timelineL == null) return null;
+		if (timelineL == null) return null;
 		return new FlxTimeline([for (layer in timelineL) FlxLayer.fromJSON(layer)]);
+	}
+
+	public static function fromJSONEx(timeline:Timeline)
+	{
+		var timelineL = timeline?.L;
+		if (timelineL == null) return null;
+		return new FlxTimeline([for (layer in timelineL) FlxLayer.fromJSONEx(layer)]);
 	}
 }

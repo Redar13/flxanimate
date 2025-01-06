@@ -64,7 +64,7 @@ class FlxKeyFrame
 		this.duration = duration;
 
 		this.name = name;
-		_elements = (elements == null) ? [] : elements;
+		_elements = elements ?? [];
 		this.colorEffect = colorEffect;
 		callbacks = [];
 		// _bitmapMatrix = FlxAnimate.matrixesPool.get();
@@ -270,6 +270,21 @@ class FlxKeyFrame
 				keyframe.add(FlxElement.fromJSON(element));
 
 		keyframe.filters = AnimationData.fromFilterJson(frame.F);
+
+		return keyframe;
+	}
+
+	public static function fromJSONEx(frame:Frame)
+	{
+		if (frame == null) return null;
+
+		var keyframe = new FlxKeyFrame(frame.I, frame.DU, null, AnimationData.fromColorJson(frame.C), frame.N);
+		final E = frame.E;
+		if (E != null)
+			for (element in E)
+				keyframe.add(FlxElement.fromJSONEx(element));
+
+		keyframe.filters = AnimationData.fromFilterJsonEx(frame.F);
 
 		return keyframe;
 	}

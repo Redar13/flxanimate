@@ -74,40 +74,6 @@ class FlxAnimateFilterRenderer
 		// #end
 	}
 
-	@:noCompletion function setRenderer(renderer:DisplayObjectRenderer, rect:Rectangle)
-	{
-		@:privateAccess
-		if (true)
-		{
-			var displayObject = FlxG.game;
-			var pixelRatio = FlxG.game.stage.__renderer.__pixelRatio;
-
-			var offsetX = rect.x > 0 ? Math.ceil(rect.x) : Math.floor(rect.x);
-			var offsetY = rect.y > 0 ? Math.ceil(rect.y) : Math.floor(rect.y);
-			if (renderer.__worldTransform == null)
-			{
-				renderer.__worldTransform = new Matrix();
-				renderer.__worldColorTransform = new ColorTransform();
-			}
-			if (displayObject.__cacheBitmapColorTransform == null) displayObject.__cacheBitmapColorTransform = new ColorTransform();
-
-			renderer.__stage = displayObject.stage;
-
-			renderer.__allowSmoothing = true;
-			renderer.__setBlendMode(NORMAL);
-			renderer.__worldAlpha = 1 / displayObject.__worldAlpha;
-
-			renderer.__worldTransform.identity();
-			renderer.__worldTransform.invert();
-			//renderer.__worldTransform.concat(new Matrix());
-			renderer.__worldTransform.tx -= offsetX;
-			renderer.__worldTransform.ty -= offsetY;
-
-			renderer.__pixelRatio = pixelRatio;
-
-		}
-	}
-
 	public function applyFilter(startBmp:BitmapData, outBmp:BitmapData, casheBmp:BitmapData, casheBmp2:BitmapData, filters:Array<BitmapFilter>, ?rect:Rectangle, ?mask:BitmapData, ?maskPos:FlxPoint)
 	{
 		if (mask != null)
@@ -226,39 +192,6 @@ class FlxAnimateFilterRenderer
 		gl.readPixels(0, 0, bitmap.width, bitmap.height, renderBuffer.__format, format ?? /* gl.FASTEST */ gl.UNSIGNED_BYTE, bitmap.image.data);
 		@:privateAccess
 		bitmap.__textureVersion = -1;
-	}
-
-	public function applyBlend(blend:BlendMode, bitmap:BitmapData)
-	{
-		bitmap.__update(false, true);
-		var bmp = new BitmapData(bitmap.width, bitmap.height, 0);
-
-		#if (js && html5)
-		ImageCanvasUtil.convertToCanvas(bmp.image);
-		@:privateAccess
-		var renderer = new CanvasRenderer(bmp.image.buffer.__srcContext);
-		#else
-		var renderer = new CairoRenderer(new Cairo(bmp.getSurface()));
-		#end
-
-		// setRenderer(renderer, bmp.rect);
-
-		var m = new Matrix();
-		var c = new ColorTransform();
-		renderer.__allowSmoothing = true;
-		renderer.__overrideBlendMode = blend;
-		renderer.__worldTransform = m;
-		renderer.__worldAlpha = 1;
-		renderer.__worldColorTransform = c;
-
-		renderer.__setBlendMode(blend);
-		#if (js && html5)
-		bmp.__drawCanvas(bitmap, renderer);
-		#else
-		bmp.__drawCairo(bitmap, renderer);
-		#end
-
-		return bitmap;
 	}
 
 	public function graphicstoBitmapData(gfx:Graphics, target:BitmapData, ?pushToImageData:Bool, ?point:FlxPoint)

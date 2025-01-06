@@ -203,9 +203,8 @@ class FlxElement extends FlxObject implements IFlxDestroyable
 
 		if (m3d == null)
 		{
-			var mx:Array<Float> = symbol ? SI.MX : ASI.MX;
 			// Initialize with identity matrix if m3d is null
-    		m = mx?.copy() ?? [
+    		m = [
 				1, 0, 0,
 				1, 0, 0
 			];
@@ -233,6 +232,59 @@ class FlxElement extends FlxObject implements IFlxDestroyable
 			m[4] += pos.x;
 			m[5] += pos.y;
 		}
+		return new FlxElement(symbol ? SI.bitmap.N : ASI.N, params, new FlxMatrix(m[0], m[1], m[2], m[3], m[4], m[5]));
+	}
+
+	public static function fromJSONEx(element:Element)
+	{
+		var SI = element.SI;
+		var ASI = element.ASI;
+		var symbol = SI != null;
+		var params:SymbolParameters = null;
+		if (symbol)
+		{
+			params = new SymbolParameters();
+			params.instance = SI.IN;
+			params.type = switch (SI.ST)
+			{
+				case movieclip, "movieclip": MovieClip;
+				case button, "button": Button;
+				default: Graphic;
+			}
+			params.blendMode = SI.B;
+
+			var lp:LoopType = (SI.LP == null) ? loop : SI.LP.split("R")[0];
+			params.loop = switch (lp) // remove the reverse sufix
+			{
+				case playonce, "playonce": PlayOnce;
+				case singleframe, "singleframe": SingleFrame;
+				default: Loop;
+			}
+			params.reverse = (SI.LP == null) ? false : StringTools.contains(SI.LP, "R");
+			params.firstFrame = SI.FF ?? 0;
+			params.colorEffect = AnimationData.fromColorJson(SI.C);
+			params.name = SI.SN;
+			params.transformationPoint = FlxPoint.weak(SI.TRP.x, SI.TRP.y);
+			params.filters = AnimationData.fromFilterJsonEx(SI.F);
+		}
+		var m:Array<Float> = null;
+		var mx = symbol ? SI.MX : ASI.MX;
+		if (mx != null)
+		{
+			m = mx;
+		}
+		else
+		{
+			var m3d = symbol ? SI.M3D : ASI.M3D;
+			if (m3d != null)
+			{
+				m = m3d;
+			}
+		}
+		m ??= [
+			1, 0, 0,
+			1, 0, 0
+		];
 		return new FlxElement(symbol ? SI.bitmap.N : ASI.N, params, new FlxMatrix(m[0], m[1], m[2], m[3], m[4], m[5]));
 	}
 }
