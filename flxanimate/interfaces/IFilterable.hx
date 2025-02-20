@@ -1,10 +1,10 @@
 package flxanimate.interfaces;
 
-import flxanimate.FlxAnimate.FlxPooledCamera;
-import openfl.display.BitmapData;
-import openfl.geom.Rectangle;
 import flixel.graphics.frames.FlxFrame;
 import flixel.math.FlxMatrix;
+import flxanimate.display.FlxPooledCamera;
+import openfl.display.BitmapData;
+import openfl.geom.Rectangle;
 
 @:allow(flxanimate.FlxAnimate)
 @:allow(flxanimate.filters.FlxAnimateFilterRenderer)

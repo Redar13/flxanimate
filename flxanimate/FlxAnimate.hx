@@ -39,6 +39,8 @@ import flxanimate.animate.*;
 import flxanimate.animate.FlxAnim;
 import flxanimate.data.AnimationData;
 import flxanimate.display.FlxAnimateFilterRenderer;
+import flxanimate.display.FlxPooledMatrix;
+import flxanimate.display.FlxPooledCamera;
 import flxanimate.frames.FlxAnimateFrames;
 import flxanimate.geom.FlxMatrix3D;
 import flxanimate.interfaces.IFilterable;
@@ -59,42 +61,6 @@ typedef Settings = {
 	?Antialiasing:Bool,
 	?ScrollFactor:FlxPoint,
 	?Offset:FlxPoint,
-}
-
-class FlxPooledMatrix extends FlxMatrix implements IFlxPooled
-{
-	static var pool:FlxPool<FlxPooledMatrix> = new FlxPool(FlxPooledMatrix);
-	public function put()
-	{
-		pool.put(this);
-	}
-	public inline static function get()
-	{
-		return pool.get();
-	}
-	public function destroy() {
-		identity();
-	}
-}
-
-class FlxPooledCamera extends FlxCamera implements IFlxPooled
-{
-	static var pool:FlxPool<FlxPooledCamera> = new FlxPool(FlxPooledCamera);
-	public function put()
-	{
-		pool.put(this);
-	}
-	public inline static function get()
-	{
-		return pool.get();
-	}
-	public override function destroy() {
-		Utils.clearCameraDraws(this);
-	}
-	public function superDestroy()
-	{
-		super.destroy();
-	}
 }
 
 @:access(flixel.FlxCamera)
@@ -963,8 +929,7 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 		#end
 		return frame;
 	}
-	static var _mat:FlxMatrix = new FlxMatrix();
-	function drawPivotLimb(limb:FlxFrame, _matrix:FlxMatrix, ?cameras:Array<FlxCamera>)
+	function drawPivotLimb(limb:FlxFrame, matrix:FlxMatrix, ?cameras:Array<FlxCamera>)
 	{
 		if (limb == null || limb.type == EMPTY || limb.parent.isDestroyed)
 			return;
@@ -976,21 +941,21 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 			if (camera == null || !camera.visible || !camera.exists)
 				return;
 
-			_mat.copyFrom(_matrix);
+			_matrix.copyFrom(matrix);
 
 			getScreenPosition(_point, camera);
 
-			_mat.translate(_point.x, _point.y);
+			_matrix.translate(_point.x, _point.y);
 
 			if (isPixelPerfectRender(camera))
 			{
-				_mat.tx = Math.floor(_mat.tx);
-				_mat.ty = Math.floor(_mat.ty);
+				_matrix.tx = Math.floor(_matrix.tx);
+				_matrix.ty = Math.floor(_matrix.ty);
 			}
 
-			if (limbOnScreen(limb, _mat, false, camera))
+			if (limbOnScreen(limb, _matrix, false, camera))
 			{
-				camera.drawPixels(limb, null, _mat, null, null, antialiasing, this.shader);
+				camera.drawPixels(limb, null, _matrix, null, null, antialiasing, this.shader);
 				#if FLX_DEBUG
 				FlxBasic.visibleCount++;
 				#end
@@ -998,7 +963,7 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 		}
 	}
 
-	function drawLimb(limb:FlxFrame, _matrix:FlxMatrix, ?colorTransform:ColorTransform, ?filterin:Bool, ?blendMode:BlendMode, ?cameras:Array<FlxCamera>)
+	function drawLimb(limb:FlxFrame, matrix:FlxMatrix, ?colorTransform:ColorTransform, ?filterin:Bool, ?blendMode:BlendMode, ?cameras:Array<FlxCamera>)
 	{
 		if (/*colorTransform != null && (colorTransform.alphaMultiplier == 0 || colorTransform.alphaOffset == -255) ||*/ limb == null || limb.type == EMPTY)
 			return;
@@ -1010,39 +975,39 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 			if (camera == null || !camera.visible || !camera.exists)
 				return;
 
-			limb.prepareMatrix(_mat);
-			_mat.concat(_matrix);
+			limb.prepareMatrix(_matrix);
+			_matrix.concat(matrix);
 
 			if (!filterin)
 			{
-				_mat.translate(-origin.x, -origin.y);
+				_matrix.translate(-origin.x, -origin.y);
 
-				_mat.scale(scale.x, scale.y);
+				_matrix.scale(scale.x, scale.y);
 
 				if (bakedRotationAngle <= 0)
 				{
 					if (angle != 0)
-						_mat.rotateWithTrig(_cosAngle, _sinAngle);
+						_matrix.rotateWithTrig(_cosAngle, _sinAngle);
 				}
 
 				if (matrixExposed)
 				{
-					_mat.concat(transformMatrix);
+					_matrix.concat(transformMatrix);
 				}
 				else
 				{
-					updateSkewToMatrix(_mat);
+					updateSkewToMatrix(_matrix);
 				}
 
-				_mat.translate(_camerasCashePoints[i].x, _camerasCashePoints[i].y);
+				_matrix.translate(_camerasCashePoints[i].x, _camerasCashePoints[i].y);
 
 				if (isPixelPerfectRender(camera))
 				{
-					_mat.tx = Math.ffloor(_mat.tx);
-					_mat.ty = Math.ffloor(_mat.ty);
+					_matrix.tx = Math.ffloor(_matrix.tx);
+					_matrix.ty = Math.ffloor(_matrix.ty);
 				}
 
-				if (!limbOnScreen(limb, _mat, true, camera))
+				if (!limbOnScreen(limb, _matrix, true, camera))
 					continue;
 				#if FLX_DEBUG
 				FlxBasic.visibleCount++;
@@ -1062,7 +1027,7 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 				*/
 				#end
 			}
-			camera.drawPixels(limb, null, _mat, colorTransform, blendMode, filterin || antialiasing, filterin ? null : this.shader);
+			camera.drawPixels(limb, null, _matrix, colorTransform, blendMode, filterin || antialiasing, filterin ? null : this.shader);
 		}
 	}
 
@@ -1149,6 +1114,8 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 		if (useAtlas)
 		{
 			anim.update(elapsed);
+			// if (anim.curInstance != null) // TODO: Fix the animation update sequence
+			// 	anim.curInstance.updateRender(elapsed, anim.curFrame, anim.symbolDictionary, anim.swfRender);
 		}
 		else
 		{

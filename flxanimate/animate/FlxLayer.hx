@@ -19,9 +19,9 @@ import flxanimate.data.AnimationData.Frame;
 import flxanimate.data.AnimationData.LayerType;
 import flxanimate.data.AnimationData.Layers;
 import flxanimate.display.FlxAnimateFilterRenderer;
+import flxanimate.display.FlxPooledCamera;
 import flxanimate.interfaces.IFilterable;
 import flxanimate.motion.easing.*;
-import flxanimate.FlxAnimate.FlxPooledCamera;
 import flxanimate.Utils;
 
 @:allow(flxanimate.FlxAnimate)
@@ -114,7 +114,7 @@ class FlxLayer extends FlxObject implements IFilterable
 
 	public function updateRender(elapsed:Float, curFrame:Int, dictionary:Map<String, FlxSymbol>, ?swfRender:Bool = false)
 	{
-		var _prevFrame = _currFrame;
+		var _prevFrame:FlxKeyFrame = _currFrame;
 		_setCurFrame(curFrame);
 		/*
 		if (_clipper == null)

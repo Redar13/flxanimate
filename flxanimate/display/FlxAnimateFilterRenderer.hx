@@ -171,7 +171,7 @@ class FlxAnimateFilterRenderer
 		//
 		// }
 		#else
-		bitmap.image = new Image(null, 0, 0, bitmap.width, bitmap.height, bitmap.fillColor);
+		bitmap.image = new Image(null, 0, 0, bitmap.width, bitmap.height, 0x0);
 		#end
 
 		bitmap.image.transparent = bitmap.transparent;

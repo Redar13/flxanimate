@@ -18,9 +18,9 @@ import flixel.FlxCamera;
 import haxe.extern.EitherType;
 
 import flxanimate.data.AnimationData;
+import flxanimate.display.FlxPooledCamera;
 import flxanimate.effects.FlxColorEffect;
 import flxanimate.interfaces.IFilterable;
-import flxanimate.FlxAnimate.FlxPooledCamera;
 import flxanimate.Utils;
 
 /**
