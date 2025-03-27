@@ -14,8 +14,10 @@ class FlxBrightness extends FlxColorEffect
 	{
 		c_Transform.redMultiplier = c_Transform.greenMultiplier = c_Transform.blueMultiplier =  1 - Math.abs(brightness);
 
-		// if (brightness >= 0)
+		if (brightness >= 0)
 			c_Transform.redOffset = c_Transform.greenOffset = c_Transform.blueOffset = Math.round(255 * brightness);
+		else
+			c_Transform.redOffset = c_Transform.greenOffset = c_Transform.blueOffset = 0;
 	}
 
 	inline function set_brightness(value:Float)
