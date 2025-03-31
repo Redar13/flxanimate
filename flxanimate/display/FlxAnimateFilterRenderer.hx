@@ -141,6 +141,7 @@ class FlxAnimateFilterRenderer
 		if (mask != null)
 			filters.pop();
 
+		outBmp.disposeImage();
 		if (openfl.Lib.current.stage.context3D == null)
 			writeCurToBitmap(outBmp);
 
@@ -255,6 +256,7 @@ class FlxAnimateFilterRenderer
 		// hardwareRenderer.__clear();
 
 		Context3DGraphics.render(gfx, hardwareRenderer);
+		target.disposeImage();
 		if (pushToImageData || openfl.Lib.current.stage.context3D == null)
 			writeCurToBitmap(target, renderBuffer);
 
