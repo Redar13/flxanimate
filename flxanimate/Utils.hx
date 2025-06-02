@@ -10,6 +10,39 @@ import openfl.Assets;
 
 using StringTools;
 
+class ReverseArrayIterator<T> {
+	final array:Array<T>;
+	var current:Int;
+
+	/**
+		Create a new `ArrayIterator`.
+	**/
+	#if !hl inline #end
+	public function new(array:Array<T>) {
+		this.array = array;
+		current = array.length - 1;
+	}
+
+	/**
+		See `Iterator.hasNext`
+	**/
+	#if !hl inline #end
+	public function hasNext() {
+		return current > -1;
+	}
+
+	/**
+		See `Iterator.next`
+	**/
+	#if !hl inline #end
+	public function next() {
+		return array[current--];
+	}
+    public static inline function reversedValues<T>(arr:Array<T>) {
+        return new ReverseArrayIterator(arr);
+    }
+}
+
 class Utils
 {
 	@:access(flixel.FlxCamera)

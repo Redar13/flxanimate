@@ -15,6 +15,7 @@ import flixel.sound.FlxSound;
 import flixel.sound.FlxSoundGroup;
 #end
 import flixel.system.FlxAssets.FlxGraphicAsset;
+import flixel.system.FlxAssets.FlxShader;
 import flixel.tile.FlxBaseTilemap;
 import flixel.util.FlxColor;
 import flixel.util.FlxDestroyUtil;
@@ -93,14 +94,12 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 
 	static var renderer:FlxAnimateFilterRenderer;
 
-	@:isVar
 	public var metadata(get, never):FlxMetaData;
 	inline function get_metadata()
 	{
 		return anim.metadata;
 	}
 
-	@:isVar
 	public var skipFilters(get, set):Bool;
 	inline function get_skipFilters()
 	{
@@ -111,7 +110,6 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 		return metadata.skipFilters = i;
 	}
 
-	@:isVar
 	public var skipBlends(get, set):Bool;
 	inline function get_skipBlends()
 	{
@@ -122,7 +120,6 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 		return metadata.skipBlends = i;
 	}
 
-	@:isVar
 	public var showHiddenLayers(get, set):Bool;
 	inline function get_showHiddenLayers()
 	{
@@ -134,7 +131,6 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 	}
 
 	public var relativeX:Float = 0;
-
 	public var relativeY:Float = 0;
 
 	/**
@@ -518,8 +514,8 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 
 		if (isPixelPerfectRender(camera))
 		{
-			_matrix.tx = Math.floor(_matrix.tx);
-			_matrix.ty = Math.floor(_matrix.ty);
+			_matrix.tx = Math.ffloor(_matrix.tx);
+			_matrix.ty = Math.ffloor(_matrix.ty);
 		}
 
 		camera.drawPixels(_frame, framePixels, _matrix, colorTransform, blend, antialiasing, shader);
@@ -543,20 +539,30 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 		return matrix;
 	}
 
+	inline extern function __getShaderWithInstace(instace, filterin)
+	{
+		return instace.useShader ? instace.shader : __getShaderBasic(filterin);
+	}
+
+	inline extern function __getShaderBasic(filterin)
+	{
+		return filterin ? null : this.shader;
+	}
+
 	function parseElement(instance:FlxElement, m:FlxMatrix, colorFilter:ColorTransform, ?filterInstance:FlxElement, ?filterin:Bool, ?blendMode:BlendMode, ?cameras:Array<FlxCamera>)
 	{
 		if (instance == null || !instance.visible)
 			return;
 
-		var mainSymbol = instance == anim.curInstance;
-
-		if (cameras == null)
-			cameras = this.cameras;
-
 		var symbol:FlxSymbol = (instance.symbol != null) ? anim.symbolDictionary.get(instance.symbol.name) : null;
 
 		if (instance.bitmap == null && symbol == null)
 			return;
+
+		if (cameras == null)
+			cameras = this.cameras;
+
+		var mainSymbol = instance == anim.curInstance;
 
 		var matrix = _caltBasicMatrix(instance._matrix, m, instance);
 
@@ -569,7 +575,7 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 
 		if (instance.bitmap != null)
 		{
-			drawLimb(frames.getByName(instance.bitmap), matrix, colorEffect, filterin, blendMode, cameras);
+			drawLimb(frames.getByName(instance.bitmap), matrix, colorEffect, filterin, blendMode, __getShaderWithInstace(instance, filterin), cameras);
 			return;
 		}
 
@@ -608,7 +614,7 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 				matrix.copyFrom(instance.symbol._filterMatrix);
 				matrix.concat(m);
 
-				drawLimb(instance.symbol._filterFrame, matrix, colorEffect, filterin, blendMode, cameras);
+				drawLimb(instance.symbol._filterFrame, matrix, colorEffect, filterin, blendMode, __getShaderWithInstace(instance, filterin), cameras);
 			}
 		}
 		else
@@ -622,9 +628,14 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 			var colorEffect_temp = ColorTransform.__pool.get();
 			var layer:FlxLayer;
 			var frame:FlxKeyFrame;
-			for (i in 0...layers.length)
+			for (layer in new ReverseArrayIterator(layers))
 			{
-				layer = layers[layers.length - 1 - i];
+			// for (i in 0...layers.length)
+			// {
+			//		layer = layers[layers.length - 1 - i];
+			// var i = layers.length;
+			// while(i > 0) {
+			//		layer = layers[--i];
 
 				if (!layer.visible && (!filterin && mainSymbol || !showHiddenLayers) /*|| layer.type == Clipper && layer._correctClip*/) continue;
 
@@ -664,7 +675,7 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 				{
 					if (!frame._renderDirty && layer._filterFrame != null)
 					{
-						drawLimb(layer._filterFrame, _caltFilterMatrix(mat_temp, matrix, instance, layer), colorEffect_temp, filterin, blendMode, (isMasked) ? [layer._clipper.maskCamera] : cameras);
+						drawLimb(layer._filterFrame, _caltFilterMatrix(mat_temp, matrix, instance, layer), colorEffect_temp, filterin, blendMode, __getShaderBasic(filterin), (isMasked) ? [layer._clipper.maskCamera] : cameras);
 						continue;
 					}
 					else
@@ -703,7 +714,7 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 
 					frame._renderDirty = false;
 
-					drawLimb(layer._filterFrame, _caltFilterMatrix(mat_temp, matrix, instance, layer), colorEffect_temp, filterin, blendMode, (isMasked) ? [layer._clipper.maskCamera] : cameras);
+					drawLimb(layer._filterFrame, _caltFilterMatrix(mat_temp, matrix, instance, layer), colorEffect_temp, filterin, blendMode, __getShaderBasic(filterin), (isMasked) ? [layer._clipper.maskCamera] : cameras);
 				}
 				if (isMasker)
 				{
@@ -711,7 +722,7 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 
 					renderMask(layer);
 
-					drawLimb(layer._filterFrame, _caltFilterMatrix(mat_temp, matrix, instance, layer), colorEffect_temp, filterin, blendMode, cameras);
+					drawLimb(layer._filterFrame, _caltFilterMatrix(mat_temp, matrix, instance, layer), colorEffect_temp, filterin, blendMode, __getShaderBasic(filterin), cameras);
 				}
 
 				/*
@@ -949,8 +960,8 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 
 			if (isPixelPerfectRender(camera))
 			{
-				_matrix.tx = Math.floor(_matrix.tx);
-				_matrix.ty = Math.floor(_matrix.ty);
+				_matrix.tx = Math.ffloor(_matrix.tx);
+				_matrix.ty = Math.ffloor(_matrix.ty);
 			}
 
 			if (limbOnScreen(limb, _matrix, false, camera))
@@ -963,7 +974,7 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 		}
 	}
 
-	function drawLimb(limb:FlxFrame, matrix:FlxMatrix, ?colorTransform:ColorTransform, ?filterin:Bool, ?blendMode:BlendMode, ?cameras:Array<FlxCamera>)
+	function drawLimb(limb:FlxFrame, matrix:FlxMatrix, ?colorTransform:ColorTransform, ?filterin:Bool, ?blendMode:BlendMode, ?shader:FlxShader, ?cameras:Array<FlxCamera>)
 	{
 		if (/*colorTransform != null && (colorTransform.alphaMultiplier == 0 || colorTransform.alphaOffset == -255) ||*/ limb == null || limb.type == EMPTY)
 			return;
@@ -1027,7 +1038,7 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 				*/
 				#end
 			}
-			camera.drawPixels(limb, null, _matrix, colorTransform, blendMode, filterin || antialiasing, filterin ? null : this.shader);
+			camera.drawPixels(limb, null, _matrix, colorTransform, blendMode, filterin || antialiasing, shader);
 		}
 	}
 

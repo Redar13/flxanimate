@@ -6,6 +6,7 @@ import openfl.geom.ColorTransform;
 import flixel.math.FlxMath;
 import flixel.math.FlxMatrix;
 import flixel.math.FlxPoint;
+import flixel.system.FlxAssets.FlxShader;
 import flixel.util.FlxDestroyUtil.IFlxDestroyable;
 import flixel.FlxCamera;
 import flixel.FlxG;
@@ -33,6 +34,9 @@ class FlxElement extends FlxObject implements IFlxDestroyable
 	 * not replace it!
 	 */
 	public var matrix(default, set):FlxMatrix;
+
+	public var useShader:Bool = false;
+	public var shader(default, set):Null<FlxShader> = null;
 
 	public var flipX:Bool;
 	public var flipY:Bool;
@@ -72,6 +76,7 @@ class FlxElement extends FlxObject implements IFlxDestroyable
 			symbol.destroy();
 		bitmap = null;
 		matrix = null;
+		shader = null;
 	}
 
 	function set_bitmap(value:String)
@@ -86,6 +91,12 @@ class FlxElement extends FlxObject implements IFlxDestroyable
 		(value == null) ? matrix.identity() : matrix = value;
 
 		return value;
+	}
+	function set_shader(value)
+	{
+		if (value != shader && symbol != null && symbol.cacheAsBitmap)
+			symbol._renderDirty = true;
+		return shader = value;
 	}
 
 	static var _updCurSym:FlxSymbol;
