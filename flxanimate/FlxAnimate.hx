@@ -309,7 +309,7 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 					_matrix.d *= -1;
 					// _matrix.ty += height;
 				}
-				if (frames != null)
+				if (frames != null && frames.frames != null)
 				{
 					parseElement(anim.curInstance, _matrix, colorTransform, null, false, blend, cameras);
 				}
