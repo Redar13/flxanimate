@@ -1,5 +1,6 @@
 package flxanimate.animate;
 
+import openfl.display.BlendMode;
 import flixel.graphics.frames.FlxFrame;
 import flixel.math.FlxMath;
 import flixel.math.FlxMatrix;
@@ -39,6 +40,7 @@ class FlxKeyFrame
 	public var index(default, set):Int;
 	public var duration(default, set):Int;
 	public var colorEffect(default, set):FlxColorEffect;
+	public var blendMode:BlendMode = NORMAL;
 
 	@:allow(flxanimate.FlxAnimate)
 	var _elements(default, null):Array<FlxElement>;
@@ -195,6 +197,7 @@ class FlxKeyFrame
 	public function clone()
 	{
 		var keyframe = new FlxKeyFrame(duration, _elements, colorEffect, name);
+		keyframe.blendMode = blendMode;
 		keyframe.callbacks = callbacks;
 		return keyframe;
 	}
@@ -206,6 +209,7 @@ class FlxKeyFrame
 		index = 0;
 		duration = 0;
 		callbacks = null;
+		blendMode = null;
 		colorEffect = null;
 		// FlxAnimate.matrixesPool.put(_bitmapMatrix);
 		for (element in _elements)
@@ -259,6 +263,7 @@ class FlxKeyFrame
 
 		return value;
 	}
+
 	public static function fromJSON(frame:Frame)
 	{
 		if (frame == null) return null;
@@ -269,6 +274,7 @@ class FlxKeyFrame
 			for (element in E)
 				keyframe.add(FlxElement.fromJSON(element));
 
+		keyframe.blendMode = (frame.B ?? NORMAL);
 		keyframe.filters = AnimationData.fromFilterJson(frame.F);
 
 		return keyframe;
@@ -284,6 +290,7 @@ class FlxKeyFrame
 			for (element in E)
 				keyframe.add(FlxElement.fromJSONEx(element));
 
+		keyframe.blendMode = (frame.B ?? NORMAL);
 		keyframe.filters = AnimationData.fromFilterJsonEx(frame.F);
 
 		return keyframe;

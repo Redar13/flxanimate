@@ -4,6 +4,7 @@ import flxanimate.effects.*;
 import flxanimate.motion.AdjustColor;
 import flixel.util.FlxDirection;
 import flixel.util.FlxColor;
+import openfl.display.BlendMode;
 import openfl.geom.ColorTransform;
 import openfl.filters.*;
 
@@ -474,6 +475,12 @@ abstract Frame({}) from {}
 	 * The duration of the frame.
 	 */
 	public var DU(get, never):Int;
+
+	/**
+	 * The blendmode of the frame
+	 */
+	public var B(get, never):BlendMode;
+
 	/**
 	 * The elements that the frame has. Drawings/symbols to be specific
 	 */
@@ -504,6 +511,10 @@ abstract Frame({}) from {}
 	inline function get_E():Array<Element>
 	{
 		return MacroAnimationData.getFieldBool(this, ["E", "elements"]);
+	}
+	inline function get_B():BlendMode
+	{
+		return MacroAnimationData.getFieldBool(this, ["B", "blend"]);
 	}
 	inline function get_C()
 	{

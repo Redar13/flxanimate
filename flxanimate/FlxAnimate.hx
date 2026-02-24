@@ -628,6 +628,7 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 			var colorEffect_temp = ColorTransform.__pool.get();
 			var layer:FlxLayer;
 			var frame:FlxKeyFrame;
+			var blend_temp:BlendMode = blendMode;
 			for (layer in new ReverseArrayIterator(layers))
 			{
 			// for (i in 0...layers.length)
@@ -663,6 +664,8 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 
 				if (frame == null) continue;
 
+				blend_temp = ((frame.blendMode == null || frame.blendMode == NORMAL) ? blendMode : frame.blendMode);
+
 				var toBitmap = !skipFilters && frame.filters != null;
 				var isMasked = layer._clipper != null;
 				var isMasker = layer.type == Clipper;
@@ -675,7 +678,7 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 				{
 					if (!frame._renderDirty && layer._filterFrame != null)
 					{
-						drawLimb(layer._filterFrame, _caltFilterMatrix(mat_temp, matrix, instance, layer), colorEffect_temp, filterin, blendMode, __getShaderBasic(filterin), (isMasked) ? [layer._clipper.maskCamera] : cameras);
+						drawLimb(layer._filterFrame, _caltFilterMatrix(mat_temp, matrix, instance, layer), colorEffect_temp, filterin, blend_temp, __getShaderBasic(filterin), (isMasked) ? [layer._clipper.maskCamera] : cameras);
 						continue;
 					}
 					else
@@ -704,7 +707,7 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 
 				if (useFilter) mat_temp.identity();
 
-				renderLayer(frame, useFilter ? mat_temp : matrix, colorEffect_temp, useFilter ? null : filterInstance, useFilter || filterin, useFilter ? null : blendMode, (toBitmap || isMasker) ? [layer._filterCamera] : (isMasked) ? [layer._clipper.maskCamera] : cameras);
+				renderLayer(frame, useFilter ? mat_temp : matrix, colorEffect_temp, useFilter ? null : filterInstance, useFilter || filterin, useFilter ? null : blend_temp, (toBitmap || isMasker) ? [layer._filterCamera] : (isMasked) ? [layer._clipper.maskCamera] : cameras);
 
 				if (toBitmap)
 				{
@@ -714,7 +717,7 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 
 					frame._renderDirty = false;
 
-					drawLimb(layer._filterFrame, _caltFilterMatrix(mat_temp, matrix, instance, layer), colorEffect_temp, filterin, blendMode, __getShaderBasic(filterin), (isMasked) ? [layer._clipper.maskCamera] : cameras);
+					drawLimb(layer._filterFrame, _caltFilterMatrix(mat_temp, matrix, instance, layer), colorEffect_temp, filterin, blend_temp, __getShaderBasic(filterin), (isMasked) ? [layer._clipper.maskCamera] : cameras);
 				}
 				if (isMasker)
 				{
@@ -722,7 +725,7 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 
 					renderMask(layer);
 
-					drawLimb(layer._filterFrame, _caltFilterMatrix(mat_temp, matrix, instance, layer), colorEffect_temp, filterin, blendMode, __getShaderBasic(filterin), cameras);
+					drawLimb(layer._filterFrame, _caltFilterMatrix(mat_temp, matrix, instance, layer), colorEffect_temp, filterin, blend_temp, __getShaderBasic(filterin), cameras);
 				}
 
 				/*
@@ -759,13 +762,13 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 					mat_temp.concat(m);
 					mat_temp.translate(layer.x, layer.y);
 
-					drawLimb(layer._filterFrame, mat_temp, colorEffect_temp, filterin, blendMode, cameras);
+					drawLimb(layer._filterFrame, mat_temp, colorEffect_temp, filterin, blend_temp, cameras);
 				}
 				else
 				{
 					mat_temp.copyFrom(matrix);
 					mat_temp.translate(layer.x, layer.y);
-					renderLayer(frame, mat_temp, colorEffect_temp, filterInstance, blendMode, cameras);
+					renderLayer(frame, mat_temp, colorEffect_temp, filterInstance, blend_temp, cameras);
 				}
 				*/
 			}
@@ -775,6 +778,9 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 	}
 	function renderLayer(frame:FlxKeyFrame, matrix:FlxMatrix, colorEffect:ColorTransform, ?filterInstance:FlxElement, ?filterin:Bool, ?blendMode:BlendMode, ?cameras:Array<FlxCamera>)
 	{
+		// if (frame.blendMode != null && frame.blendMode != NORMAL)
+		// 	blendMode = frame.blendMode;
+
 		for (element in frame.getList())
 			parseElement(element, matrix, colorEffect, filterInstance, filterin, blendMode, cameras);
 	}
