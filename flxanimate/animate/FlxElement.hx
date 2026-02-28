@@ -143,8 +143,8 @@ class FlxElement extends FlxObject implements IFlxDestroyable
 
 	// suppost list: openfl.display.OpenGLRenderer.hx:1030
 
-	static final _eregBlendStartKey	 = new EReg("_bl|blend" + _eregSpace + "|смешение" + _eregSpace + "|наложнение" + _eregSpace, _eregOpt);
-	static final _eregBlendEndKey	 = new EReg("(?:_)?end", _eregOpt);
+	public static final _eregBlendStartKey	 = new EReg("_bl|blend" + _eregSpace + "|смешение" + _eregSpace + "|наложнение" + _eregSpace, _eregOpt);
+	public static final _eregBlendEndKey	 = new EReg("(?:_)?end", _eregOpt);
 
 	public static function blendModeFromString(str:String):BlendMode
 	{

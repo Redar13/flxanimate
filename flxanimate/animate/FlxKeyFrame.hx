@@ -268,7 +268,7 @@ class FlxKeyFrame
 	{
 		if (frame == null) return null;
 
-		var name = params.N;
+		var name = frame.N;
 		final keyframe = new FlxKeyFrame(frame.I, frame.DU, null, AnimationData.fromColorJson(frame.C), name);
 		final E = frame.E;
 		if (E != null)
@@ -277,14 +277,14 @@ class FlxKeyFrame
 
 		if (name != null && name.length > 0)
 		{
-			if (_eregBlendStartKey.match(name))
+			if (FlxElement._eregBlendStartKey.match(name))
 			{
-				var endIsValid = _eregBlendEndKey.match(_eregBlendStartKey.matchedRight());
-				keyframe.blendMode = blendModeFromString(endIsValid ? _eregBlendEndKey.matchedLeft() : _eregBlendStartKey.matchedRight());
+				var endIsValid = FlxElement._eregBlendEndKey.match(FlxElement._eregBlendStartKey.matchedRight());
+				keyframe.blendMode = FlxElement.blendModeFromString(endIsValid ? FlxElement._eregBlendEndKey.matchedLeft() : FlxElement._eregBlendStartKey.matchedRight());
 			}
 			else
 			{
-				keyframe.blendMode = blendModeFromString(name);
+				keyframe.blendMode = FlxElement.blendModeFromString(name);
 			}
 		}
 		keyframe.filters = AnimationData.fromFilterJson(frame.F);
