@@ -83,6 +83,8 @@ class SymbolParameters implements IFilterable
 	 */
 	public var firstFrame(default, set):Int =  0;
 
+	public var lastFrame(default, set):Int =  -1;
+	
 	@:allow(flxanimate.animate.FlxKeyFrame)
 	@:allow(flxanimate.animate.FlxElement)
 	/**
@@ -128,6 +130,7 @@ class SymbolParameters implements IFilterable
 		this.type = type;
 		this.loop = loop;
 		firstFrame = 0;
+		lastFrame = -1;
 		transformationPoint = FlxPoint.get();
 		colorEffect = None;
 		_curFrame = 0;
@@ -141,6 +144,7 @@ class SymbolParameters implements IFilterable
 		type = null;
 		reverse = false;
 		firstFrame = 0;
+		lastFrame = -1;
 		name = null;
 		colorEffect = null;
 		transformationPoint = FlxDestroyUtil.put(transformationPoint);
@@ -221,6 +225,17 @@ class SymbolParameters implements IFilterable
 		return value;
 	}
 
+	function set_lastFrame(value:Int)
+	{
+		if (type == Graphic && lastFrame != value)
+		{
+			lastFrame = value;
+			_renderDirty = true;
+		}
+
+		return value;
+	}
+
 	public function reset()
 	{
 		name = null;
@@ -228,6 +243,7 @@ class SymbolParameters implements IFilterable
 		loop = Loop;
 		instance = "";
 		firstFrame = 0;
+		lastFrame = -1;
 		transformationPoint.set();
 		colorEffect = None;
 	}
