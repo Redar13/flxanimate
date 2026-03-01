@@ -104,13 +104,7 @@ class FlxElement extends FlxObject implements IFlxDestroyable
 	{
 		if (symbol != null && (_updCurSym = dictionary.get(symbol.name)) != null)
 		{
-			var curFF = (symbol.type == MovieClip) ? 0 : switch (symbol.loop)
-			{
-				case Loop:		(symbol.firstFrame + curFrame) % _updCurSym.length;
-				case PlayOnce:	cast FlxMath.bound(symbol.firstFrame + curFrame, 0, _updCurSym.length - 1);
-				default:		symbol.firstFrame;
-			}
-
+			var curFF = (symbol.type == MovieClip) ? 0 : getCurrentIndex(symbol, curFrame, 0);
 			symbol.update(curFF);
 			@:privateAccess
 			if (symbol._renderDirty && _parent != null && _parent._cacheAsBitmap)
@@ -121,6 +115,27 @@ class FlxElement extends FlxObject implements IFlxDestroyable
 			_updCurSym.updateRender(elapsed, curFF, dictionary, swfRender);
 		}
 		update(elapsed);
+	}
+
+	public function getCurrentIndex(symbol:SymbolParameters, index:Int, frameIndex:Int = 0):Int
+	{
+		final frameIndex:Int = symbol.firstFrame + (index - frameIndex);
+		final frameCount:Int = _updCurSym.length - 1;
+
+		final hasLastFrame:Bool = (symbol.lastFrame > -1);
+		final endFrame:Int = hasLastFrame ? FlxMath.minInt(symbol.lastFrame, frameCount) : frameCount;
+
+		switch (symbol.loop)
+		{
+			case Loop:
+				return FlxMath.wrap(frameIndex, hasLastFrame ? symbol.firstFrame : 0, endFrame);
+			case PlayOnce:
+				return FlxMath.minInt(frameIndex, endFrame);
+			case SingleFrame:
+				return symbol.firstFrame;
+		}
+
+		return frameIndex;
 	}
 
 	inline extern static final _eregOpt = "i";
@@ -202,6 +217,7 @@ class FlxElement extends FlxObject implements IFlxDestroyable
 			}
 			params.reverse = (lpStr == null) ? false : StringTools.contains(lpStr, "R");
 			params.firstFrame = SI.FF;
+			params.lastFrame = SI.LF;
 			params.colorEffect = AnimationData.fromColorJson(SI.C);
 			params.name = SI.SN;
 			var transformationPoint = SI.TRP;
@@ -273,6 +289,7 @@ class FlxElement extends FlxObject implements IFlxDestroyable
 			}
 			params.reverse = (SI.LP == null) ? false : StringTools.contains(SI.LP, "R");
 			params.firstFrame = SI.FF ?? 0;
+			params.lastFrame = SI.LF ?? -1;
 			params.colorEffect = AnimationData.fromColorJson(SI.C);
 			params.name = SI.SN;
 			params.transformationPoint = FlxPoint.weak(SI.TRP.x, SI.TRP.y);
