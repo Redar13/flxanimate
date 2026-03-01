@@ -580,6 +580,8 @@ abstract SymbolInstance({}) from {}
 	 * this sets on which frame it's the symbol, Graphic only
 	 */
 	public var FF(get, never):Int;
+
+	public var LF(get, never):Int;
 	/**
 	 * the Loop Type of the symbol, which can be:
 	 * - Loop
@@ -637,6 +639,11 @@ abstract SymbolInstance({}) from {}
 	inline function get_FF()
 	{
 		return MacroAnimationData.getFieldBool(this, ["FF", "firstFrame"]) ?? 0;
+	}
+	
+	inline function get_LF()
+	{
+		return MacroAnimationData.getFieldBool(this, ["LF", "lastFrame"]) ?? -1;
 	}
 
 	inline function get_LP()
