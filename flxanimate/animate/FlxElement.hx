@@ -118,25 +118,46 @@ class FlxElement extends FlxObject implements IFlxDestroyable
 	}
 
 	public function getCurrentIndex(symbol:SymbolParameters, index:Int, frameIndex:Int = 0):Int
-	{
-		final frameIndex:Int = symbol.firstFrame + (index - frameIndex);
-		final frameCount:Int = _updCurSym.length - 1;
+    {
+        var frameIndex:Int = symbol.firstFrame + (index - frameIndex);
+        final lastIndex:Int = _updCurSym.length - 1;
+        final hasLastFrame:Bool = (symbol.lastFrame > -1);
+        final doWrap:Bool = hasLastFrame && (symbol.lastFrame < symbol.firstFrame);
 
-		final hasLastFrame:Bool = (symbol.lastFrame > -1);
-		final endFrame:Int = hasLastFrame ? FlxMath.minInt(symbol.lastFrame, frameCount) : frameCount;
+        final length:Int = (doWrap ? lastIndex : (hasLastFrame ? FlxMath.minInt(symbol.lastFrame, lastIndex) : lastIndex)) - symbol.firstFrame + 1;
+        final totalLength:Int = doWrap ? length + (symbol.lastFrame + 1) : length;
 
-		switch (symbol.loop)
-		{
-			case Loop:
-				return FlxMath.wrap(frameIndex, hasLastFrame ? symbol.firstFrame : 0, endFrame);
-			case PlayOnce:
-				return FlxMath.minInt(frameIndex, endFrame);
-			case SingleFrame:
-				return symbol.firstFrame;
-		}
+        switch (symbol.loop)
+        {
+            case SingleFrame:
+                return symbol.firstFrame;
 
-		return frameIndex;
-	}
+            case PlayOnce:
+                frameIndex = FlxMath.minInt((frameIndex - symbol.firstFrame), totalLength - 1);
+
+            case Loop:
+                if (doWrap)
+                {
+                    frameIndex = ((frameIndex - symbol.firstFrame) % totalLength + totalLength) % totalLength;
+                }
+                else
+                {
+                    var low:Int = 0;
+                    var high:Int = lastIndex;
+                    if (hasLastFrame)
+                    {
+                        low = symbol.firstFrame;
+                        high = FlxMath.minInt(symbol.lastFrame, lastIndex);
+                    }
+                    return FlxMath.wrap(frameIndex, low, high);
+                }
+        }
+
+        if (frameIndex < length)
+            return symbol.firstFrame + frameIndex;
+
+        return (doWrap ? 0 : -1) + (frameIndex - length);
+    }
 
 	inline extern static final _eregOpt = "i";
 	inline extern static final _eregSpace = "(?:_)?";
