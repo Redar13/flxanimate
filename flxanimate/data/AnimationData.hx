@@ -574,7 +574,7 @@ abstract SymbolInstance({}) from {}
 	 */
 	public var bitmap(get, never):Bitmap;
 
-	public var B(get, never):String;
+	public var B(get, never):BlendMode;
 
 	/**
 	 * this sets on which frame it's the symbol, Graphic only
@@ -640,7 +640,7 @@ abstract SymbolInstance({}) from {}
 	{
 		return MacroAnimationData.getFieldBool(this, ["FF", "firstFrame"]) ?? 0;
 	}
-	
+
 	inline function get_LF()
 	{
 		return MacroAnimationData.getFieldBool(this, ["LF", "lastFrame"]) ?? -1;

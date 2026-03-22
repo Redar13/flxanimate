@@ -42,6 +42,7 @@ import flxanimate.data.AnimationData;
 import flxanimate.display.FlxAnimateFilterRenderer;
 import flxanimate.display.FlxPooledMatrix;
 import flxanimate.display.FlxPooledCamera;
+import flxanimate.display.RenderTexture;
 import flxanimate.frames.FlxAnimateFrames;
 import flxanimate.geom.FlxMatrix3D;
 import flxanimate.interfaces.IFilterable;
@@ -132,6 +133,19 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 
 	public var relativeX:Float = 0;
 	public var relativeY:Float = 0;
+
+	/**
+	 * Whether to internally use a render texture when drawing the Texture Atlas.
+	 * This flattens all of the limbs into a single graphic, making effects such as alpha or shaders apply to
+	 * the entire sprite instead of individual limbs.
+	 * Only supported on targets that use `renderTile`.
+	 */
+	public var useRenderTexture:Bool = false;
+
+	#if !flash
+	var _renderTexture:RenderTexture;
+	#end
+	var _renderTextureDirty:Bool = true;
 
 	/**
 	 * # Description
@@ -270,9 +284,20 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 		}
 	}
 
+	function checkRenderTexture():Bool
+	{
+		#if flash
+		return false;
+		#else
+		return useAtlas && useRenderTexture && (alpha != 1 || shader != null || (blend != null && blend != NORMAL));
+		#end
+	}
+
+
 	// TODO: PRECASHE FILTERS FUNC
 
 	var _camerasCashePoints(default, null):Array<FlxPoint> = [];
+	var willUseRenderTexture:Bool = false;
 	/**
 	 * the function `draw()` renders the symbol that `anim` has currently plus a pivot that you can toggle on or off.
 	 */
@@ -295,6 +320,7 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 			updateTrig();
 			if (anim.curInstance != null)
 			{
+				willUseRenderTexture = checkRenderTexture();
 				_flashRect.setEmpty();
 
 				anim.curInstance.updateRender(_lastElapsed, anim.curFrame, anim.symbolDictionary, anim.swfRender);
@@ -311,16 +337,49 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 				}
 				if (frames != null && frames.frames != null)
 				{
-					parseElement(anim.curInstance, _matrix, colorTransform, null, false, blend, cameras);
+					#if !flash
+					if (willUseRenderTexture)
+					{
+						if (_renderTexture == null)
+						{
+							_renderTexture = new RenderTexture();
+							_renderTextureDirty = true;
+						}
+
+						var elementMatrix = anim.curInstance.matrix;
+						if (_renderTextureDirty)
+						{
+							_renderTexture.drawToCamera((camera, matrix) ->
+							{
+								static var _tempColor = new ColorTransform();
+								parseElement(anim.curInstance, matrix, _tempColor, null, true, null, [camera]);
+								frameWidth = Math.floor(Math.abs(_flashRect.width));
+								frameHeight = Math.floor(Math.abs(_flashRect.height));
+								width = frameWidth * scale.x;
+								height = frameHeight * scale.y;
+								relativeX = _flashRect.x;
+								relativeY = _flashRect.y;
+							});
+							_renderTexture.init(frameWidth, frameHeight);
+							_renderTexture.render(-relativeX, -relativeY);
+							var frame = _renderTexture.graphic.imageFrame.frame;
+							frame.offset.set(relativeX / 2, relativeY / 2);
+							@:privateAccess
+							frame.cacheFrameMatrix();
+
+							_renderTextureDirty = false;
+						}
+
+						drawLimb(_renderTexture.graphic.imageFrame.frame, _matrix, colorTransform, false, blend, shader, cameras);
+					}
+					else
+					#end
+					{
+						parseElement(anim.curInstance, _matrix, colorTransform, null, false, blend, cameras);
+						updateParams();
+					}
 				}
 
-				width = Math.abs(_flashRect.width);
-				height = Math.abs(_flashRect.height);
-				frameWidth = Math.round(width / scale.x);
-				frameHeight = Math.round(height / scale.y);
-
-				relativeX = _flashRect.x - x;
-				relativeY = _flashRect.y - y;
 				#if FLX_DEBUG
 				if (FlxG.debugger.drawDebug) // draw hitbox
 				{
@@ -586,7 +645,7 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 		}
 
 		// var cacheToBitmap = !skipFilters && (instance.symbol.cacheAsBitmap/* || this.filters != null && mainSymbol*/) && filterInstance != instance;
-		var cacheToBitmap = !skipFilters && instance.symbol.cacheAsBitmap && (!filterin || filterInstance != instance);
+		var cacheToBitmap = !skipFilters && instance.symbol.cacheAsBitmap && (!filterin || (filterInstance != null && filterInstance != instance));
 
 		if (cacheToBitmap)
 		{
@@ -1043,6 +1102,10 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 				}
 				*/
 				#end
+			}
+			else if (willUseRenderTexture && _renderTextureDirty)
+			{
+				limbOnScreen(limb, _matrix, true, camera);
 			}
 			camera.drawPixels(limb, null, _matrix, colorTransform, blendMode, filterin || antialiasing, shader);
 		}

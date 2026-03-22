@@ -472,6 +472,8 @@ class FlxAnim implements IFlxDestroyable
 					else
 						curFrame++;
 				}
+
+				_parent._renderTextureDirty = true;
 				curSymbol.fireCallbacks();
 				onFrame.dispatch(curInstance.symbol.name, curSymbol.name, curFrame);
 			}
