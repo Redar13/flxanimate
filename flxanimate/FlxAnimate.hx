@@ -376,7 +376,6 @@ class FlxAnimate extends FlxSprite // TODO: MultipleAnimateAnims suppost
 					#end
 					{
 						parseElement(anim.curInstance, _matrix, colorTransform, null, false, blend, cameras);
-						updateParams();
 					}
 				}
 
